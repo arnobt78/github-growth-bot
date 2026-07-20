@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -19,6 +21,7 @@ class RecommendationOut(BaseModel):
     body: str
     validated: bool
     dismissed: bool
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
