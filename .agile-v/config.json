@@ -1,0 +1,50 @@
+{
+  "project": "github-growth-bot",
+  "description": "Personal GitHub account command center: multi-agent analytics pipeline + dashboard for organic repo growth (no artificial engagement).",
+  "regulatory_context": "non-regulated",
+  "current_cycle": "C1",
+  "current_stage": "Stage 4 (Verification) complete for backend sub-scope; Stage 1-3 pending for frontend sub-scope",
+  "authority_matrix": {
+    "product_owner": {
+      "name": "Arnob Mahmud",
+      "email": "arnob_t78@yahoo.com",
+      "role": "Project Owner / Sole Stakeholder",
+      "authority": ["Gate 1", "Gate 2", "CR approval", "risk acceptance", "CAPA closure"]
+    }
+  },
+  "model_versions": {
+    "high_tier": {
+      "model": "claude-opus-4-8",
+      "used_for": ["final whole-branch review", "architecture/design decisions"],
+      "last_validated": "2026-07-20",
+      "validated_by": "Arnob Mahmud"
+    },
+    "medium_tier": {
+      "model": "claude-sonnet-5",
+      "used_for": ["task implementers (integration-complexity tasks)", "task reviewers", "controller/orchestrator"],
+      "last_validated": "2026-07-20",
+      "validated_by": "Arnob Mahmud"
+    },
+    "low_medium_tier": {
+      "model": "claude-haiku-4-5",
+      "used_for": ["mechanical/transcription implementer tasks"],
+      "last_validated": "2026-07-20",
+      "validated_by": "Arnob Mahmud"
+    }
+  },
+  "llm_provider_registry": {
+    "note": "This registry governs the AGENT tooling (Claude Code) that built this project. The application's OWN multi-provider LLM router (app/llm_router.py) is a separate, project-internal component documented in REQUIREMENTS.md REQ-0004 and is not an agent-tooling provider.",
+    "providers": [
+      {
+        "name": "Anthropic (Claude Code / Claude API)",
+        "models": ["claude-opus-4-8", "claude-sonnet-5", "claude-haiku-4-5"],
+        "data_residency": "per Anthropic API terms",
+        "retention": "per Anthropic API terms",
+        "api_data_usage": "not used for training per standard API terms",
+        "approved_for": ["public repo metadata", "source code", "no PII/secrets processed"],
+        "review_date": "2026-07-20"
+      }
+    ]
+  },
+  "policy_file": ".agile-v/POLICY.yaml"
+}

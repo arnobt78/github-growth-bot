@@ -1,0 +1,57 @@
+# Agile-V Policy-as-Code — github-growth-bot
+# Version: 1
+# Effective: 2026-07-20
+
+version: 1
+project: github-growth-bot
+regulatory_context: non-regulated
+
+binding_constraints:
+  - id: POL-0001
+    rule: "Never implement or accept a code change that writes/stars/forks/follows/watches another GitHub entity programmatically."
+    linked_req: REQ-0000
+    enforcement: "Code review must grep for write-capable GitHub API calls (POST/PUT/PATCH/DELETE to /user/starred, /repos/*/forks, /user/following) on every change touching github_client.py."
+    violation_action: halt-and-escalate-to-human
+
+  - id: POL-0002
+    rule: "All backend API endpoints except GET /api/health require Authorization: Bearer <API_KEY>."
+    linked_req: REQ-0007
+    enforcement: "Every new FastAPI router must include dependencies=[Depends(require_api_key)]; verified at task review and final review."
+    violation_action: block-merge
+
+  - id: POL-0003
+    rule: "Endpoint paths must not contain: analytics, analysis, tracking, performance, metrics."
+    linked_req: REQ-0006
+    enforcement: "Reviewer greps new route decorators before approval."
+    violation_action: block-merge
+
+  - id: POL-0004
+    rule: "No secrets (API keys, tokens, DB credentials) committed to git in any form, including test fixtures."
+    linked_req: REQ-0009
+    enforcement: ".env.example holds placeholders only; .gitignore/.dockerignore exclude .env*; reviewer checks diffs for credential-shaped strings."
+    violation_action: halt-and-escalate-to-human
+
+  - id: POL-0005
+    rule: "Build Agent does not verify its own work (Red Team Protocol / Directive 4)."
+    linked_req: all
+    enforcement: "Every implementer subagent's diff is reviewed by a fresh subagent with no shared context; final whole-branch review dispatched on the highest-tier model available, separate from implementation."
+    violation_action: halt-and-escalate-to-human
+
+  - id: POL-0006
+    rule: "No deployment (VPS, Vercel, DNS, Coolify app creation) without explicit Human Gate 2 approval for the relevant cycle."
+    linked_req: REQ-0009, REQ-0014
+    enforcement: "APPROVALS.md must contain a GATE-XXXX entry with Decision=Approved for the cycle before any deploy skill/agent action runs."
+    violation_action: halt-and-escalate-to-human
+
+model_tier_policy:
+  architecture_decisions: high
+  implementation_mechanical: low_medium
+  implementation_integration: medium
+  task_review: medium
+  final_whole_branch_review: high
+
+gate_requirements:
+  gate_1:
+    requires: ["REQUIREMENTS.md section reviewed", "Human approval logged in APPROVALS.md"]
+  gate_2:
+    requires: ["EVAL_RESULTS.md eval_gate_status == PASS or WAIVED-with-approver", "VALIDATION_SUMMARY.md EvalGate line present", "no open Critical findings", "Human approval logged in APPROVALS.md"]
