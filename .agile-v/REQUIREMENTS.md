@@ -54,7 +54,7 @@ Status tags per `agile-v-lifecycle`: `approved [C1]` (accepted, not yet built), 
 **Status:** approved [C1], not started.
 
 **REQ-0012 — Shared, reusable, strictly-typed UI layer.** `lib/`/`hooks/`/`providers/`/`types/`/`components/ui/` structure; types generated from the backend's OpenAPI schema (no hand-duplicated interfaces); shadcn/ui + Tailwind consistent theme (light/dark); every title/label/button carries a meaningful `lucide-react` icon with semantic color tied to the data it represents. `SafeImage` pattern (`docs/SAFE_IMAGE_REUSABLE_COMPONENT.md`) reused for GitHub avatars.
-**Status:** approved [C1], not started.
+**Status:** approved [C1], not started. Tooling confirmed 2026-07-20 (see design spec §6.1): Recharts for charts, `openapi-typescript` for type generation, Vitest + React Testing Library for tests.
 
 **REQ-0013 — API-key isolation from the browser.** Browser never holds the backend's static API key; Next.js Route Handlers attach it server-side and proxy all backend calls.
 **Status:** approved [C1], not started. **Open item:** Product Owner flagged this as the chosen default over full auth (Clerk/NextAuth) or Vercel password protection — revisit if the dashboard's threat model changes (see RISK_REGISTER RISK-0004).

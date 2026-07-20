@@ -242,6 +242,24 @@ is a personal, non-public tool with no SEO value.
   done: golden path (view repos, drill into one, dismiss a recommendation, trigger a manual run)
   and edge cases (no repos tracked yet, all LLM providers down, a repo with zero traffic history).
 
+## 6.1 Frontend build-start addendum (confirmed 2026-07-20, resuming after backend Gate 2)
+
+Three implementation-level choices were still open when frontend work resumed; confirmed with the
+Product Owner before writing the implementation plan:
+
+- **Charts:** Recharts, for trend charts and sparklines — it's what shadcn/ui's own chart
+  components are built on, so it stays consistent with the shadcn/ui + Tailwind choice already
+  made in §4.3, rather than introducing a second design system (Tremor) or hand-rolling low-level
+  D3 primitives (visx) for what Phase 1 needs.
+- **OpenAPI type generation:** `openapi-typescript`, run against the backend's `/openapi.json`,
+  generating types only (no runtime, no hooks) — fits REQ-0012 without conflicting with the
+  hand-written `hooks/` layer (`useRepoSnapshots`, `useRecommendations`, `useLiveEvents`, etc.)
+  already committed to in §4.3. (Ruled out `orval`, which generates its own TanStack Query hooks
+  and would duplicate that layer.)
+- **Frontend test framework:** Vitest + React Testing Library, for the component tests and the
+  SSE-invalidation smoke test described in §6 — fast, ESM-native, minimal config against the App
+  Router, no build-side transform overhead the way Jest would need.
+
 ## 7. Open items for the user to confirm before/at deploy time (not blockers for building)
 
 - GitHub Personal Access Token scope: read-only on the repos to be tracked (needs `repo` scope
