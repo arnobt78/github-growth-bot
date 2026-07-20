@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -19,6 +21,7 @@ class RepoOut(BaseModel):
     id: int
     owner: str
     name: str
+    tracked_since: datetime
 
     model_config = {"from_attributes": True}
 
