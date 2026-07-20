@@ -31,3 +31,13 @@ Evidence Summary presented for `INT-0001` (Gate 2, backend sub-scope). Product O
 **Frontend brainstorming explicitly deferred to next session** ("we'll do tomorrow").
 
 **Resume point for next session:** read this file first. Backend sub-scope is fully accepted (Gate 2 closed) — next work is either (a) Stage 1 (Requirements formalization / Gate 1) for the frontend sub-scope via `superpowers:brainstorming`, or (b) resolving RISK-0005/RISK-0006 and executing the actual VPS deployment (needs its own Gate 2 per POL-0006, since "accepted" ≠ "deployed"). No open `CHECKPOINTS.md` interrupts as of this log entry.
+
+## Incident + Remediation — 2026-07-20 (same day, after Gate 2 closure)
+
+**What happened:** The controller's original first commit accidentally included 3 private VPS-infrastructure docs (real IP, internal hostnames, other-project subdomains) that were then pushed to the public repo. Full detail: `CAPA_LOG.md` CAPA-0003, `DECISION_LOG.md` DEC-0019, `RISK_REGISTER.md` RISK-0011.
+
+**Remediation completed:** Old repository (`arnobt78/github-growth-bot`) deleted by the Product Owner on GitHub; local `.git` wiped (`rm -rf .git`) by the Product Owner; controller re-initialized git from a clean working tree (all files verified present, sensitive docs correctly excluded via `.gitignore`), created ONE clean commit, created a new repository at the same URL, and pushed. Verified via `git log --all` (empty result for the 3 filenames) and GitHub API (old repo confirmed 404).
+
+**Current repo state:** Single commit `31d7c1a` on `main` at `https://github.com/arnobt78/github-growth-bot`. This supersedes all prior commit SHAs referenced elsewhere in `.agile-v/` (e.g. `BUILD_MANIFEST.md`'s per-task commit list, `APPROVALS.md` GATE-0001's evidence reference) — those SHAs are now historical references to work *content*, not resolvable commits in the current repository. Not rewritten retroactively in this session (would require touching every file that cites a SHA); flagged here as the authoritative note on why old SHAs won't `git show` successfully going forward.
+
+**Gate 2 (GATE-0001) status:** Still valid — it approved the backend *content/scope*, which is unchanged and fully intact in the new single commit. The approval is not invalidated by a history rewrite that changed no code, only commit-graph shape.

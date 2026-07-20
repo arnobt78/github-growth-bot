@@ -28,6 +28,30 @@
 
 ---
 
+## CAPA-0003
+
+**Cycle:** C1
+**Trigger:** Human-reported — sensitive data exposed in a public repository
+**Nonconformity:** The controller agent's first git commit (`git add -A` followed later by a targeted `git add <one file>` without first clearing the stale staging area) accidentally included 8 of the user's personal cross-project reference docs, 3 of which contained real infrastructure details: Hetzner VPS IP address, Coolify internal sslip.io hostnames, and the subdomains/names/ports of several *other* unrelated projects the user runs on the same VPS. This commit was later pushed to a public GitHub repository (`arnobt78/github-growth-bot`), exposing that infrastructure topology publicly. A subsequent commit removed the files from the working tree but did not remove them from git history — the content remained fully retrievable from the public repo until this CAPA's corrective action.
+
+**Root Cause (5-Whys):**
+1. Why were sensitive docs pushed publicly? → They were present in the first commit's content.
+2. Why were they in the first commit? → `git add -A` (run to investigate unexpected files found in the project directory) staged them, and staging was never cleared before the intended commit.
+3. Why wasn't staging cleared? → The controller ran a follow-up `git add <specific-file>` assuming it would scope the commit to just that file, not accounting for the fact that `git commit` commits the full index, not just the most recent `git add` target.
+4. Why didn't a pre-commit check catch this? → No `git status`/`git diff --stat` review step existed between staging and committing at that point in the session — the controller trusted the most recent `add` command's scope rather than verifying the actual index state.
+5. Why did a later "removal" commit fail to actually fix it? → Removing a file in a new commit only affects the current tree snapshot; it does not remove the file's content from earlier commits still reachable in branch history — a git mechanics gap in the initial fix attempt (by the user, addressed collaboratively once flagged).
+
+**Corrective Action:** Full remediation performed: (1) local git history rewritten with `git-filter-repo` to purge the 3 files from every commit — superseded when (2) the user independently ran `rm -rf .git` locally and deleted the GitHub repository entirely, after which the controller re-initialized git from scratch (`git init`), staged only current, `.gitignore`-respecting content (verified empty grep for the 3 filenames before committing), created one clean commit, and pushed to a newly created repository at the same URL (`https://github.com/arnobt78/github-growth-bot`). Old repository confirmed deleted via GitHub API (404-equivalent response) before recreation.
+
+**Preventive Action:** Documented in this CAPA and in DECISION_LOG DEC-0019 as a standing process rule: after any broad `git add -A`/`git add .`, always run `git status` (and `git diff --stat` for staged content) to review the full index before committing — never trust the scope of the most recent `add` command alone. Applies to all future cycles/agents on this project and is a good general rule to carry into other projects.
+
+**Effectiveness Verification:** `git log --all -- <the 3 filenames>` returns empty on the rebuilt repository (confirmed twice — once after the filter-repo rewrite, once after the full rebuild). GitHub API search for the old repository returns a "does not exist" validation error, confirming deletion. New repository's single commit reviewed file-by-file (`git status --short`) before commit to confirm no other unwanted local files (e.g. `.claude/settings.json`, a local tooling config file) were accidentally included.
+
+**Status:** verified-effective — closed
+**Owner:** Arnob Mahmud
+
+---
+
 ## CAPA-0002
 
 **Cycle:** C1
