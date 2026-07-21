@@ -31,7 +31,7 @@ class GitHubClient:
     def _get(self, path: str, **kwargs) -> httpx.Response:
         resp = self._http.get(path, **kwargs)
         if resp.status_code == 401:
-            raise GitHubAuthError(f"GitHub token rejected for {path}")
+            raise GitHubAuthError(f"needs_reauth: GitHub token rejected for {path}")
         resp.raise_for_status()
         return resp
 
@@ -55,7 +55,7 @@ class GitHubClient:
         if resp.status_code == 404:
             return None
         if resp.status_code == 401:
-            raise GitHubAuthError(f"GitHub token rejected for /repos/{owner}/{name}/readme")
+            raise GitHubAuthError(f"needs_reauth: GitHub token rejected for /repos/{owner}/{name}/readme")
         resp.raise_for_status()
         content = resp.json().get("content", "")
         return base64.b64decode(content).decode("utf-8", errors="replace")
@@ -63,7 +63,7 @@ class GitHubClient:
     def has_file(self, owner: str, name: str, path: str) -> bool:
         resp = self._http.get(f"/repos/{owner}/{name}/contents/{path}")
         if resp.status_code == 401:
-            raise GitHubAuthError(f"GitHub token rejected for /repos/{owner}/{name}/contents/{path}")
+            raise GitHubAuthError(f"needs_reauth: GitHub token rejected for /repos/{owner}/{name}/contents/{path}")
         return resp.status_code == 200
 
     def search_similar_repos(self, language: str, topic: str, limit: int = 5) -> list[dict]:
