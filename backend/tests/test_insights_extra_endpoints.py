@@ -67,3 +67,17 @@ def test_insights_endpoint_uses_typed_schema(client, seed_user):
 def test_unknown_repo_returns_404_for_new_endpoints(client):
     assert client.get("/repos/999999/referrers").status_code == 404
     assert client.get("/repos/999999/popular-paths").status_code == 404
+
+
+def test_snapshots_isolated_per_user(client, other_user_client):
+    repo_resp = client.post("/repos", json={"owner": "octocat", "name": "mine"})
+    repo_id = repo_resp.json()["id"]
+
+    other_snapshots = other_user_client.get(f"/repos/{repo_id}/snapshots")
+    assert other_snapshots.status_code == 404
+
+    other_insights = other_user_client.get(f"/repos/{repo_id}/insights")
+    assert other_insights.status_code == 404
+
+    other_benchmarks = other_user_client.get(f"/repos/{repo_id}/benchmarks")
+    assert other_benchmarks.status_code == 404

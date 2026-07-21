@@ -6,8 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.deps import require_api_key
-from app.models import BenchmarkRepo, PopularPath, Recommendation, Referrer, Repo, Snapshot
+from app.deps import require_api_key, require_user
+from app.models import BenchmarkRepo, PopularPath, Recommendation, Referrer, Repo, Snapshot, User
 
 router = APIRouter(prefix="/repos", tags=["insights"], dependencies=[Depends(require_api_key)])
 
@@ -61,14 +61,18 @@ class PopularPathOut(BaseModel):
 
 
 @router.get("/{repo_id}/snapshots", response_model=list[SnapshotOut])
-def list_snapshots(repo_id: int, db: Session = Depends(get_db)) -> list[Snapshot]:
-    _require_repo(repo_id, db)
+def list_snapshots(
+    repo_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_user)
+) -> list[Snapshot]:
+    _require_repo(repo_id, db, current_user)
     return db.execute(select(Snapshot).where(Snapshot.repo_id == repo_id).order_by(Snapshot.date)).scalars().all()
 
 
 @router.get("/{repo_id}/insights", response_model=InsightsOut)
-def get_insights(repo_id: int, db: Session = Depends(get_db)) -> InsightsOut:
-    _require_repo(repo_id, db)
+def get_insights(
+    repo_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_user)
+) -> InsightsOut:
+    _require_repo(repo_id, db, current_user)
     latest = db.execute(
         select(Snapshot).where(Snapshot.repo_id == repo_id).order_by(Snapshot.date.desc())
     ).scalars().first()
@@ -84,30 +88,38 @@ def get_insights(repo_id: int, db: Session = Depends(get_db)) -> InsightsOut:
 
 
 @router.get("/{repo_id}/benchmarks", response_model=list[BenchmarkOut])
-def list_benchmarks(repo_id: int, db: Session = Depends(get_db)) -> list[BenchmarkOut]:
-    _require_repo(repo_id, db)
+def list_benchmarks(
+    repo_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_user)
+) -> list[BenchmarkOut]:
+    _require_repo(repo_id, db, current_user)
     rows = db.execute(select(BenchmarkRepo).where(BenchmarkRepo.source_repo_id == repo_id)).scalars().all()
     return [BenchmarkOut(full_name=r.full_name, stars=r.stars, forks=r.forks, topics=r.topics) for r in rows]
 
 
 @router.get("/{repo_id}/referrers", response_model=list[ReferrerOut])
-def list_referrers(repo_id: int, db: Session = Depends(get_db)) -> list[Referrer]:
-    _require_repo(repo_id, db)
+def list_referrers(
+    repo_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_user)
+) -> list[Referrer]:
+    _require_repo(repo_id, db, current_user)
     return db.execute(
         select(Referrer).where(Referrer.repo_id == repo_id).order_by(Referrer.date.desc())
     ).scalars().all()
 
 
 @router.get("/{repo_id}/popular-paths", response_model=list[PopularPathOut])
-def list_popular_paths(repo_id: int, db: Session = Depends(get_db)) -> list[PopularPath]:
-    _require_repo(repo_id, db)
+def list_popular_paths(
+    repo_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_user)
+) -> list[PopularPath]:
+    _require_repo(repo_id, db, current_user)
     return db.execute(
         select(PopularPath).where(PopularPath.repo_id == repo_id).order_by(PopularPath.date.desc())
     ).scalars().all()
 
 
-def _require_repo(repo_id: int, db: Session) -> Repo:
-    repo = db.get(Repo, repo_id)
+def _require_repo(repo_id: int, db: Session, current_user: User) -> Repo:
+    repo = db.execute(
+        select(Repo).where(Repo.id == repo_id, Repo.user_id == current_user.id)
+    ).scalars().first()
     if repo is None:
         raise HTTPException(status_code=404, detail="Repo not found")
     return repo
