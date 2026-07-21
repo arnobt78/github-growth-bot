@@ -50,4 +50,6 @@ Product Owner then requested a deep audit before test/commit. Audit covered: `py
 
 Product Owner then explicitly authorized pushing to GitHub pending clean review ("commit in github if all okay as flawless after code review"). Logged as `GATE-0002` (Approved) for the frontend sub-scope, closing `INT-0002`. Governance docs (`STATE.md`, `REQUIREMENTS.md`, `CHECKPOINTS.md`, `APPROVALS.md`, `docs/PROJECT_PLAN.md`, `docs/PROJECT_WALKTHROUGH.md`) updated to reflect frontend acceptance before push.
 
-**Resume point for next session:** read this file first. Both C1 sub-scopes are Gate 2-accepted; remaining work is deployment only (see Next Action above).
+Pushed to `https://github.com/arnobt78/github-growth-bot` at `main`: `3081105..f6f42ee` (29 commits — full frontend build, escalated backend fix, final-review fix, CVE fix, this governance update).
+
+**Resume point for next session:** read this file first. Both C1 sub-scopes are Gate 2-accepted and pushed; remaining work is deployment only (see Next Action above).
