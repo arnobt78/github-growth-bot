@@ -34,3 +34,24 @@ def _reset_db():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     yield
+
+
+@pytest.fixture
+def seed_user():
+    from app.db import SessionLocal
+    from app.models import User
+
+    db = SessionLocal()
+    user = User(
+        github_id="12345",
+        username="octocat",
+        avatar_url="https://avatars.githubusercontent.com/u/12345",
+        email="octocat@example.com",
+        access_token_encrypted="placeholder-ciphertext",
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    user_id = user.id
+    db.close()
+    return user_id

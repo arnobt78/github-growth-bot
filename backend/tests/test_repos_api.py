@@ -1,4 +1,4 @@
-def test_create_list_get_delete_repo(client):
+def test_create_list_get_delete_repo(client, seed_user):
     create_resp = client.post("/repos", json={"owner": "octocat", "name": "hello-world"})
     assert create_resp.status_code == 201
     repo_id = create_resp.json()["id"]

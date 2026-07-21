@@ -4,30 +4,30 @@ from app.db import SessionLocal
 from app.models import PipelineRun, Recommendation, Repo, Snapshot
 
 
-def _seed():
+def _seed(user_id):
     db = SessionLocal()
-    repo = Repo(owner="octocat", name="hello-world")
+    repo = Repo(owner="octocat", name="hello-world", user_id=user_id)
     db.add(repo)
     db.commit()
     db.refresh(repo)
     repo_id = repo.id  # captured before later commits expire the instance
 
-    db.add(Snapshot(repo_id=repo_id, date=date(2026, 7, 19), stars=100, forks=10, watchers=100, open_issues=2))
-    snap = Snapshot(repo_id=repo_id, date=date(2026, 7, 20), stars=110, forks=12, watchers=110, open_issues=3)
+    db.add(Snapshot(user_id=user_id, repo_id=repo_id, date=date(2026, 7, 19), stars=100, forks=10, watchers=100, open_issues=2))
+    snap = Snapshot(user_id=user_id, repo_id=repo_id, date=date(2026, 7, 20), stars=110, forks=12, watchers=110, open_issues=3)
     db.add(snap)
     db.commit()
     db.refresh(snap)
     snap_id = snap.id
 
-    db.add(Recommendation(repo_id=repo_id, snapshot_id=snap_id, category="missing_license", title="Add a LICENSE", body="No LICENSE file found.", validated=True))
-    db.add(PipelineRun(status="ok"))
+    db.add(Recommendation(user_id=user_id, repo_id=repo_id, snapshot_id=snap_id, category="missing_license", title="Add a LICENSE", body="No LICENSE file found.", validated=True))
+    db.add(PipelineRun(user_id=user_id, status="ok"))
     db.commit()
     db.close()
     return repo_id
 
 
-def test_snapshots_and_insights_and_recommendations_and_runs(client):
-    repo_id = _seed()
+def test_snapshots_and_insights_and_recommendations_and_runs(client, seed_user):
+    repo_id = _seed(seed_user)
 
     snapshots_resp = client.get(f"/repos/{repo_id}/snapshots")
     assert snapshots_resp.status_code == 200

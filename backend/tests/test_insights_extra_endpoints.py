@@ -4,30 +4,30 @@ from app.db import SessionLocal
 from app.models import BenchmarkRepo, PopularPath, Referrer, Repo
 
 
-def _seed_repo_with_traffic_data():
+def _seed_repo_with_traffic_data(user_id):
     db = SessionLocal()
-    repo = Repo(owner="octocat", name="hello-world")
+    repo = Repo(owner="octocat", name="hello-world", user_id=user_id)
     db.add(repo)
     db.commit()
     db.refresh(repo)
     repo_id = repo.id
 
-    db.add(Referrer(repo_id=repo_id, date=date(2026, 7, 20), referrer="github.com", count=50, uniques=30))
-    db.add(PopularPath(repo_id=repo_id, date=date(2026, 7, 20), path="/", count=100, uniques=60))
-    db.add(BenchmarkRepo(source_repo_id=repo_id, full_name="torvalds/linux", stars=999, forks=100, topics=["kernel"]))
+    db.add(Referrer(user_id=user_id, repo_id=repo_id, date=date(2026, 7, 20), referrer="github.com", count=50, uniques=30))
+    db.add(PopularPath(user_id=user_id, repo_id=repo_id, date=date(2026, 7, 20), path="/", count=100, uniques=60))
+    db.add(BenchmarkRepo(user_id=user_id, source_repo_id=repo_id, full_name="torvalds/linux", stars=999, forks=100, topics=["kernel"]))
     db.commit()
     db.close()
     return repo_id
 
 
-def test_repo_out_includes_tracked_since(client):
+def test_repo_out_includes_tracked_since(client, seed_user):
     resp = client.post("/repos", json={"owner": "octocat", "name": "hello-world"})
     assert resp.status_code == 201
     assert "tracked_since" in resp.json()
 
 
-def test_referrers_endpoint_returns_seeded_rows(client):
-    repo_id = _seed_repo_with_traffic_data()
+def test_referrers_endpoint_returns_seeded_rows(client, seed_user):
+    repo_id = _seed_repo_with_traffic_data(seed_user)
 
     resp = client.get(f"/repos/{repo_id}/referrers")
     assert resp.status_code == 200
@@ -37,8 +37,8 @@ def test_referrers_endpoint_returns_seeded_rows(client):
     assert body[0]["uniques"] == 30
 
 
-def test_popular_paths_endpoint_returns_seeded_rows(client):
-    repo_id = _seed_repo_with_traffic_data()
+def test_popular_paths_endpoint_returns_seeded_rows(client, seed_user):
+    repo_id = _seed_repo_with_traffic_data(seed_user)
 
     resp = client.get(f"/repos/{repo_id}/popular-paths")
     assert resp.status_code == 200
@@ -48,16 +48,16 @@ def test_popular_paths_endpoint_returns_seeded_rows(client):
     assert body[0]["count"] == 100
 
 
-def test_benchmarks_endpoint_uses_typed_schema(client):
-    repo_id = _seed_repo_with_traffic_data()
+def test_benchmarks_endpoint_uses_typed_schema(client, seed_user):
+    repo_id = _seed_repo_with_traffic_data(seed_user)
 
     resp = client.get(f"/repos/{repo_id}/benchmarks")
     assert resp.status_code == 200
     assert resp.json() == [{"full_name": "torvalds/linux", "stars": 999, "forks": 100, "topics": ["kernel"]}]
 
 
-def test_insights_endpoint_uses_typed_schema(client):
-    repo_id = _seed_repo_with_traffic_data()
+def test_insights_endpoint_uses_typed_schema(client, seed_user):
+    repo_id = _seed_repo_with_traffic_data(seed_user)
 
     resp = client.get(f"/repos/{repo_id}/insights")
     assert resp.status_code == 200

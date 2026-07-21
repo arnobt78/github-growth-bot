@@ -13,7 +13,7 @@ class PipelineRunner:
         self.db = db_session
 
     def run_for_repo(self, repo: Repo) -> PipelineContext:
-        run_row = PipelineRun(status="running")
+        run_row = PipelineRun(status="running", user_id=repo.user_id)
         self.db.add(run_row)
         self.db.commit()
         self.db.refresh(run_row)
@@ -36,6 +36,7 @@ class PipelineRunner:
             duration_ms = int((time.monotonic() - start) * 1000)
 
             self.db.add(StageRun(
+                user_id=repo.user_id,
                 pipeline_run_id=run_row.id,
                 stage_name=stage.name,
                 status=status,

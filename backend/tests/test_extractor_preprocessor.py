@@ -1,7 +1,7 @@
 from datetime import date
 from unittest.mock import MagicMock
 
-from app.db import Base, SessionLocal, engine
+from app.db import SessionLocal
 from app.models import Repo, Snapshot
 from app.pipeline.base import PipelineContext
 from app.pipeline.extractor import Extractor
@@ -21,11 +21,9 @@ def _fake_gh_client():
     return gh
 
 
-def test_extractor_populates_raw():
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
+def test_extractor_populates_raw(seed_user):
     db = SessionLocal()
-    repo = Repo(owner="octocat", name="hello-world")
+    repo = Repo(owner="octocat", name="hello-world", user_id=seed_user)
     db.add(repo)
     db.commit()
     db.refresh(repo)
@@ -41,13 +39,13 @@ def test_extractor_populates_raw():
     db.close()
 
 
-def test_preprocessor_diffs_against_previous_snapshot():
+def test_preprocessor_diffs_against_previous_snapshot(seed_user):
     db = SessionLocal()
-    repo = Repo(owner="octocat", name="hello-world")
+    repo = Repo(owner="octocat", name="hello-world", user_id=seed_user)
     db.add(repo)
     db.commit()
     db.refresh(repo)
-    db.add(Snapshot(repo_id=repo.id, date=date(2026, 7, 19), stars=100, forks=10, watchers=100, open_issues=5))
+    db.add(Snapshot(user_id=seed_user, repo_id=repo.id, date=date(2026, 7, 19), stars=100, forks=10, watchers=100, open_issues=5))
     db.commit()
 
     ctx = PipelineContext(repo=repo)

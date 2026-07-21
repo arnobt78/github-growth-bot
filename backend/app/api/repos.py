@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.deps import require_api_key
 from app.events import broadcaster
-from app.models import Repo
+from app.models import Repo, User
 
 router = APIRouter(prefix="/repos", tags=["repos"], dependencies=[Depends(require_api_key)])
 
@@ -33,7 +33,14 @@ def list_repos(db: Session = Depends(get_db)) -> list[Repo]:
 
 @router.post("", response_model=RepoOut, status_code=201)
 def create_repo(payload: RepoCreate, db: Session = Depends(get_db)) -> Repo:
-    repo = Repo(owner=payload.owner, name=payload.name)
+    # TODO(Task 2/3): replace with the authenticated caller's user_id once
+    # per-request auth (require_user) is wired in. Until then this app is
+    # still effectively single-tenant, so we attach new repos to whichever
+    # account exists.
+    owner_user = db.query(User).first()
+    if owner_user is None:
+        raise HTTPException(status_code=500, detail="No user account exists yet")
+    repo = Repo(owner=payload.owner, name=payload.name, user_id=owner_user.id)
     db.add(repo)
     db.commit()
     db.refresh(repo)

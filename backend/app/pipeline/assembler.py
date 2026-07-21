@@ -19,6 +19,7 @@ class Assembler(Stage):
         snapshot_date = datetime.now(timezone.utc).date()
 
         snapshot = Snapshot(
+            user_id=ctx.repo.user_id,
             repo_id=ctx.repo.id,
             date=snapshot_date,
             stars=ctx.normalized.get("stars", 0),
@@ -37,6 +38,7 @@ class Assembler(Stage):
 
         for benchmark in ctx.normalized.get("benchmarks", []):
             self.db.add(BenchmarkRepo(
+                user_id=ctx.repo.user_id,
                 source_repo_id=ctx.repo.id,
                 full_name=benchmark.get("full_name", ""),
                 stars=benchmark.get("stargazers_count", 0),
@@ -46,6 +48,7 @@ class Assembler(Stage):
 
         for referrer in ctx.normalized.get("referrers", []):
             self.db.add(Referrer(
+                user_id=ctx.repo.user_id,
                 repo_id=ctx.repo.id,
                 date=snapshot_date,
                 referrer=referrer.get("referrer", ""),
@@ -55,6 +58,7 @@ class Assembler(Stage):
 
         for popular_path in ctx.normalized.get("popular_paths", []):
             self.db.add(PopularPath(
+                user_id=ctx.repo.user_id,
                 repo_id=ctx.repo.id,
                 date=snapshot_date,
                 path=popular_path.get("path", ""),
@@ -66,6 +70,7 @@ class Assembler(Stage):
             if not rec.get("validated", False):
                 continue
             self.db.add(Recommendation(
+                user_id=ctx.repo.user_id,
                 repo_id=ctx.repo.id,
                 snapshot_id=snapshot.id,
                 category=rec.get("category", "general"),

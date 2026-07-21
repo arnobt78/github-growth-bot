@@ -9,7 +9,7 @@ a future constructor-signature mismatch in build_stages would be caught here.
 """
 from unittest.mock import MagicMock
 
-from app.db import Base, SessionLocal, engine
+from app.db import SessionLocal
 from app.models import PipelineRun, Repo, Snapshot, StageRun
 from app.pipeline.analyzer import Analyzer
 from app.pipeline.assembler import Assembler
@@ -51,11 +51,9 @@ def _fake_llm_router():
     return llm
 
 
-def test_real_pipeline_runs_end_to_end_through_production_wiring():
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
+def test_real_pipeline_runs_end_to_end_through_production_wiring(seed_user):
     db = SessionLocal()
-    repo = Repo(owner="octocat", name="hello-world")
+    repo = Repo(owner="octocat", name="hello-world", user_id=seed_user)
     db.add(repo)
     db.commit()
     db.refresh(repo)

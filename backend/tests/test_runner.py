@@ -1,7 +1,7 @@
 # backend/tests/test_runner.py
 from unittest.mock import MagicMock
 
-from app.db import Base, SessionLocal, engine
+from app.db import SessionLocal
 from app.models import PipelineRun, Recommendation, Repo, Snapshot, StageRun
 from app.pipeline.base import PipelineContext, Stage
 from app.pipeline.runner import PipelineRunner
@@ -36,7 +36,7 @@ class _DBIntegrityErrorStage(Stage):
         # category is a NOT NULL column on Recommendation (see app/models.py) -
         # inserting None and committing raises sqlalchemy.exc.IntegrityError
         # and leaves the shared session in a "pending rollback" state.
-        self.db.add(Recommendation(repo_id=ctx.repo.id, category=None, title="bad", body="b"))
+        self.db.add(Recommendation(user_id=ctx.repo.user_id, repo_id=ctx.repo.id, category=None, title="bad", body="b"))
         self.db.commit()
         return ctx
 
@@ -49,19 +49,17 @@ class _MarksContinuedStage(Stage):
         return ctx
 
 
-def _db():
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
+def _db(user_id):
     db = SessionLocal()
-    repo = Repo(owner="octocat", name="hello-world")
+    repo = Repo(owner="octocat", name="hello-world", user_id=user_id)
     db.add(repo)
     db.commit()
     db.refresh(repo)
     return db, repo
 
 
-def test_runner_persists_run_and_stage_rows_even_on_stage_failure():
-    db, repo = _db()
+def test_runner_persists_run_and_stage_rows_even_on_stage_failure(seed_user):
+    db, repo = _db(seed_user)
     from app.pipeline.assembler import Assembler
     runner = PipelineRunner(stages=[_BoomStage(), _SetsNormalizedStage(), Assembler(db_session=db)], db_session=db)
 
@@ -84,8 +82,8 @@ def test_runner_persists_run_and_stage_rows_even_on_stage_failure():
     db.close()
 
 
-def test_runner_rolls_back_shared_session_after_stage_db_integrity_error():
-    db, repo = _db()
+def test_runner_rolls_back_shared_session_after_stage_db_integrity_error(seed_user):
+    db, repo = _db(seed_user)
     runner = PipelineRunner(
         stages=[_DBIntegrityErrorStage(db), _MarksContinuedStage()],
         db_session=db,
