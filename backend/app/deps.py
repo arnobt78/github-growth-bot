@@ -20,14 +20,14 @@ def require_user(
     db: Session = Depends(get_db),
 ) -> User:
     if not x_internal_user_token:
-        raise HTTPException(status_code=401, detail="Missing internal user token")
+        raise HTTPException(status_code=401, detail="Invalid or missing user token")
 
     try:
         github_id = verify_internal_user_token(x_internal_user_token)
-    except ValueError as exc:
-        raise HTTPException(status_code=401, detail=str(exc))
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid or missing user token")
 
     user = db.execute(select(User).where(User.github_id == github_id)).scalars().first()
     if user is None:
-        raise HTTPException(status_code=401, detail="Unknown user")
+        raise HTTPException(status_code=401, detail="Invalid or missing user token")
     return user
