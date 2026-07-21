@@ -1962,28 +1962,14 @@ def run_pipeline_for_all_repos(db: Session, user_id: int | None = None) -> None:
         broadcaster.publish("run_completed", {}, user_id=uid)
 ```
 
-Note: `GitHubAuthError`'s message must contain the literal substring `"needs_reauth"` for this detection to work — Step 4 fixes that.
+Note: `GitHubAuthError`'s message must contain the literal substring `"needs_reauth"` for this detection to work — Task 8's reviewer caught that the original code omitted it, and it was fixed immediately (commit `9dd34ee`) rather than deferred here as originally scheduled. `_get`, `get_readme`, and `has_file` in `backend/app/github_client.py` already raise `GitHubAuthError` with a `"needs_reauth: ..."`-prefixed message — nothing left to do for that here.
 
-- [ ] **Step 4: Update `GitHubAuthError`'s message to include the `needs_reauth` marker**
-
-```python
-# backend/app/github_client.py:14-17 — update the _get helper's raise
-    def _get(self, path: str, **kwargs) -> httpx.Response:
-        resp = self._http.get(path, **kwargs)
-        if resp.status_code == 401:
-            raise GitHubAuthError(f"needs_reauth: GitHub token rejected for {path}")
-        resp.raise_for_status()
-        return resp
-```
-
-Also update the two inline 401 checks in `get_readme` and `has_file` (from Task 8) to use the same `"needs_reauth: ..."` message prefix for consistency.
-
-- [ ] **Step 5: Run test to verify it passes**
+- [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd backend && .venv/bin/python -m pytest tests/test_pipeline_per_user.py -v`
 Expected: PASS
 
-- [ ] **Step 6: Update `main.py`'s scheduled job (now scans all users automatically — no change needed to the call itself, just confirm it still reads correctly)**
+- [ ] **Step 5: Update `main.py`'s scheduled job (now scans all users automatically — no change needed to the call itself, just confirm it still reads correctly)**
 
 ```python
 # backend/app/main.py:36-41 — unchanged code, confirm it still reads this way
@@ -1997,7 +1983,7 @@ def _scheduled_pipeline_run() -> None:
 
 (No edit needed here — `run_pipeline_for_all_repos(db)` already means "all users" now that `user_id` defaults to `None`. This step is a verification checkpoint, not a code change.)
 
-- [ ] **Step 7: Write the failing BackgroundTasks test for `POST /runs`**
+- [ ] **Step 6: Write the failing BackgroundTasks test for `POST /runs`**
 
 ```python
 # backend/tests/test_runs_api.py
@@ -2021,12 +2007,12 @@ def test_trigger_run_requires_user_token(client_without_user_token):
     assert resp.status_code == 401
 ```
 
-- [ ] **Step 8: Run test to verify it fails**
+- [ ] **Step 7: Run test to verify it fails**
 
 Run: `cd backend && .venv/bin/python -m pytest tests/test_runs_api.py -v`
 Expected: FAIL — `POST /runs` currently runs synchronously and returns `list[PipelineRunOut]`, not `{"status": "started"}`.
 
-- [ ] **Step 9: Rewrite `runs.py`**
+- [ ] **Step 8: Rewrite `runs.py`**
 
 ```python
 # backend/app/api/runs.py — full replacement
@@ -2133,17 +2119,17 @@ Note: `PipelineRunner.run_for_repo` (unmodified — see `app/pipeline/runner.py`
 
 This is the smallest possible change to `runner.py` — the `Stage`/`PipelineContext` interface (the thing CLAUDE.md protects) is completely untouched; only the two `db.add(...)` calls gain one field each.
 
-- [ ] **Step 10: Run test to verify it passes**
+- [ ] **Step 9: Run test to verify it passes**
 
 Run: `cd backend && .venv/bin/python -m pytest tests/test_runs_api.py -v`
 Expected: PASS
 
-- [ ] **Step 11: Run the full suite**
+- [ ] **Step 10: Run the full suite**
 
 Run: `cd backend && .venv/bin/python -m pytest -v 2>&1 | tail -60`
 Expected: all green. `test_runner.py`'s existing tests construct `PipelineRunner` directly with a `Repo` — confirm those repos have `user_id` set (per Task 1's fix-forward pass); if any fail here for the first time, it's because `runner.py`'s `run_for_repo` now reads `repo.user_id` — make sure every `Repo` fixture in `test_runner.py`/`test_pipeline_integration.py` has a real `user_id`.
 
-- [ ] **Step 12: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
 cd backend
