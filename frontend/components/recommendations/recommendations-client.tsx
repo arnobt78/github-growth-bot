@@ -2,6 +2,7 @@
 
 import { CheckCircle2, Filter, Lightbulb, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -69,7 +70,13 @@ export function RecommendationsClient() {
                   variant="ghost"
                   size="icon"
                   aria-label="Dismiss recommendation"
-                  onClick={() => dismiss.mutate({ id: rec.id, dismissed: true })}
+                  onClick={() =>
+                    dismiss.mutate(
+                      { id: rec.id, dismissed: true },
+                      { onError: () => toast.error("Could not dismiss — try again.") },
+                    )
+                  }
+                  disabled={dismiss.isPending}
                 >
                   <X className="h-4 w-4 text-red-500" aria-hidden="true" />
                 </Button>

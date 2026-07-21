@@ -8,7 +8,7 @@ const EVENT_QUERY_MAP: Record<string, QueryKey[]> = {
   repo_added: [queryKeys.repos.all],
   repo_removed: [queryKeys.repos.all],
   recommendation_updated: [queryKeys.recommendations.all],
-  run_completed: [queryKeys.runs.all, queryKeys.repos.all],
+  run_completed: [queryKeys.runs.all, queryKeys.repos.all, queryKeys.recommendations.all],
 };
 
 export function useLiveEvents() {
