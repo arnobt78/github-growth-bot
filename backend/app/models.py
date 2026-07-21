@@ -33,7 +33,7 @@ class Snapshot(Base):
     __tablename__ = "snapshots"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    repo_id: Mapped[int] = mapped_column(ForeignKey("repos.id"))
+    repo_id: Mapped[int] = mapped_column(ForeignKey("repos.id", ondelete="CASCADE"))
     date: Mapped[date] = mapped_column(Date)
     stars: Mapped[int] = mapped_column(Integer, default=0)
     forks: Mapped[int] = mapped_column(Integer, default=0)
@@ -49,7 +49,7 @@ class BenchmarkRepo(Base):
     __tablename__ = "benchmark_repos"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_repo_id: Mapped[int] = mapped_column(ForeignKey("repos.id"))
+    source_repo_id: Mapped[int] = mapped_column(ForeignKey("repos.id", ondelete="CASCADE"))
     full_name: Mapped[str] = mapped_column(String(255))
     stars: Mapped[int] = mapped_column(Integer, default=0)
     forks: Mapped[int] = mapped_column(Integer, default=0)
@@ -61,7 +61,7 @@ class Referrer(Base):
     __tablename__ = "referrers"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    repo_id: Mapped[int] = mapped_column(ForeignKey("repos.id"))
+    repo_id: Mapped[int] = mapped_column(ForeignKey("repos.id", ondelete="CASCADE"))
     date: Mapped[date] = mapped_column(Date)
     referrer: Mapped[str] = mapped_column(String(255))
     count: Mapped[int] = mapped_column(Integer, default=0)
@@ -72,7 +72,7 @@ class PopularPath(Base):
     __tablename__ = "popular_paths"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    repo_id: Mapped[int] = mapped_column(ForeignKey("repos.id"))
+    repo_id: Mapped[int] = mapped_column(ForeignKey("repos.id", ondelete="CASCADE"))
     date: Mapped[date] = mapped_column(Date)
     path: Mapped[str] = mapped_column(String(500))
     count: Mapped[int] = mapped_column(Integer, default=0)
@@ -103,8 +103,8 @@ class Recommendation(Base):
     __tablename__ = "recommendations"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    repo_id: Mapped[int] = mapped_column(ForeignKey("repos.id"))
-    snapshot_id: Mapped[int | None] = mapped_column(ForeignKey("snapshots.id"), nullable=True)
+    repo_id: Mapped[int] = mapped_column(ForeignKey("repos.id", ondelete="CASCADE"))
+    snapshot_id: Mapped[int | None] = mapped_column(ForeignKey("snapshots.id", ondelete="CASCADE"), nullable=True)
     category: Mapped[str] = mapped_column(String(100))
     title: Mapped[str] = mapped_column(String(500))
     body: Mapped[str] = mapped_column(Text)
