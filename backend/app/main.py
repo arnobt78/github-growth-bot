@@ -9,6 +9,7 @@ from app.api.insights import router as insights_router
 from app.api.recommendations import router as recommendations_router
 from app.api.runs import router as runs_router
 from app.api.providers import router as providers_router
+from app.api.users import router as users_router
 from app.db import SessionLocal
 from app.pipeline.jobs import run_pipeline_for_all_repos
 
@@ -28,6 +29,7 @@ app.include_router(insights_router)
 app.include_router(recommendations_router)
 app.include_router(runs_router)
 app.include_router(providers_router)
+app.include_router(users_router)
 app.include_router(events_router)
 
 scheduler = BackgroundScheduler()
