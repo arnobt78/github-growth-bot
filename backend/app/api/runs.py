@@ -1,14 +1,13 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db import get_db
-from app.deps import require_api_key
-from app.events import broadcaster
-from app.models import PipelineRun, StageRun
+from app.db import SessionLocal, get_db
+from app.deps import require_api_key, require_user
+from app.models import PipelineRun, StageRun, User
 
 router = APIRouter(prefix="/runs", tags=["runs"], dependencies=[Depends(require_api_key)])
 
@@ -32,22 +31,44 @@ class StageRunOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class TriggerRunOut(BaseModel):
+    status: str
+
+
 @router.get("", response_model=list[PipelineRunOut])
-def list_runs(db: Session = Depends(get_db)) -> list[PipelineRun]:
-    return db.execute(select(PipelineRun).order_by(PipelineRun.started_at.desc())).scalars().all()
+def list_runs(db: Session = Depends(get_db), current_user: User = Depends(require_user)) -> list[PipelineRun]:
+    return db.execute(
+        select(PipelineRun)
+        .where(PipelineRun.user_id == current_user.id)
+        .order_by(PipelineRun.started_at.desc())
+    ).scalars().all()
 
 
-@router.post("", response_model=list[PipelineRunOut], status_code=202)
-def trigger_run(db: Session = Depends(get_db)) -> list[PipelineRun]:
+@router.post("", response_model=TriggerRunOut, status_code=202)
+def trigger_run(
+    background_tasks: BackgroundTasks, current_user: User = Depends(require_user)
+) -> TriggerRunOut:
+    background_tasks.add_task(_run_pipeline_background, current_user.id)
+    return TriggerRunOut(status="started")
+
+
+def _run_pipeline_background(user_id: int) -> None:
     from app.pipeline.jobs import run_pipeline_for_all_repos
-    run_pipeline_for_all_repos(db)
-    broadcaster.publish("run_completed", {})
-    return db.execute(select(PipelineRun).order_by(PipelineRun.started_at.desc()).limit(1)).scalars().all()
+
+    db = SessionLocal()
+    try:
+        run_pipeline_for_all_repos(db, user_id=user_id)
+    finally:
+        db.close()
 
 
 @router.get("/{run_id}/stages", response_model=list[StageRunOut])
-def list_run_stages(run_id: int, db: Session = Depends(get_db)) -> list[StageRun]:
-    run = db.get(PipelineRun, run_id)
+def list_run_stages(
+    run_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_user)
+) -> list[StageRun]:
+    run = db.execute(
+        select(PipelineRun).where(PipelineRun.id == run_id, PipelineRun.user_id == current_user.id)
+    ).scalars().first()
     if run is None:
         raise HTTPException(status_code=404, detail="Run not found")
     return db.execute(
