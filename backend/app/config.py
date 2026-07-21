@@ -19,6 +19,10 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = []
 
+    # Multi-tenant SaaS foundation (Phase 2)
+    token_encryption_key: str = ""
+    internal_auth_secret: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
