@@ -3,6 +3,7 @@
 import { ExternalLink, Eye, GitFork, Lightbulb, Star, Trash2 } from "lucide-react";
 import { Line, LineChart, ResponsiveContainer } from "recharts";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,7 +42,11 @@ export function RepoCard({ repo }: { repo: Repo }) {
           variant="ghost"
           size="icon"
           aria-label={`Stop tracking ${repo.owner}/${repo.name}`}
-          onClick={() => deleteRepo.mutate(repo.id)}
+          onClick={() =>
+            deleteRepo.mutate(repo.id, {
+              onError: () => toast.error(`Could not stop tracking ${repo.owner}/${repo.name} — try again.`),
+            })
+          }
           disabled={deleteRepo.isPending}
         >
           <Trash2 className="h-4 w-4 text-red-500" aria-hidden="true" />

@@ -45,22 +45,22 @@ Status tags per `agile-v-lifecycle`: `approved [C1]` (accepted, not yet built), 
 
 ---
 
-## Frontend Requirements (C1 — Approved, Not Yet Implemented)
+## Frontend Requirements (C1 — Implemented)
 
 **REQ-0010 — Next.js App Router dashboard.** Overview page (tracked repos, sparklines, delta badges), repo detail page (trend charts, benchmark comparison, referrers, recommendations), recommendations inbox, pipeline runs history, settings. SSR data-fetching directly in `page.tsx`; only genuinely interactive code in `use client` components.
-**Status:** approved [C1], not started.
+**Status:** implemented [C1]. Primary artifacts: `frontend/app/page.tsx`, `frontend/app/repos/[id]/page.tsx`, `frontend/app/recommendations/page.tsx`, `frontend/app/runs/page.tsx`, `frontend/app/settings/page.tsx`, `frontend/components/overview/`, `frontend/components/repo-detail/`, `frontend/components/recommendations/`, `frontend/components/runs/`, `frontend/components/settings/`.
 
 **REQ-0011 — Instant UI updates, no refresh, on any CRUD action.** TanStack Query mutations + SSE-driven cache invalidation update the current tab and all other open tabs immediately (dismiss recommendation, add/remove repo, manual run trigger) — consuming REQ-0008's `/events` stream. Shell (headers/labels/icons/buttons/cards) renders instantly; only data-bearing regions show inline pulse-skeletons, no `loading.tsx`. Independent server prefetches run in parallel (`Promise.all`), not sequential.
-**Status:** approved [C1], not started.
+**Status:** implemented [C1]. Primary artifacts: `frontend/hooks/use-repos.ts`, `frontend/hooks/use-recommendations.ts`, `frontend/hooks/use-runs.ts`, `frontend/hooks/use-live-events.ts`, `frontend/providers/live-events-provider.tsx`, `frontend/providers/query-provider.tsx`, `frontend/app/api/events/route.ts`. Verified end-to-end in Task 20's manual pass: dismissing a recommendation in one browser tab instantly cleared it from a second tab's repo-detail view via SSE-driven cache invalidation, with no reload.
 
 **REQ-0012 — Shared, reusable, strictly-typed UI layer.** `lib/`/`hooks/`/`providers/`/`types/`/`components/ui/` structure; types generated from the backend's OpenAPI schema (no hand-duplicated interfaces); shadcn/ui + Tailwind consistent theme (light/dark); every title/label/button carries a meaningful `lucide-react` icon with semantic color tied to the data it represents. `SafeImage` pattern (`docs/SAFE_IMAGE_REUSABLE_COMPONENT.md`) reused for GitHub avatars.
-**Status:** approved [C1], not started. Tooling confirmed 2026-07-20 (see design spec §6.1): Recharts for charts, `openapi-typescript` for type generation, Vitest + React Testing Library for tests.
+**Status:** implemented [C1]. Primary artifacts: `frontend/lib/` (`api.ts`, `api-types.ts`, `backend-client.ts`, `fetch-json.ts`, `query-keys.ts`, `route-handler.ts`, `utils.ts`), `frontend/hooks/`, `frontend/providers/`, `frontend/types/api.d.ts` (generated from backend OpenAPI schema), `frontend/components/ui/`, `frontend/components/safe-image.tsx`. Dark/light legibility spot-checked across all 5 pages in Task 20's manual pass.
 
 **REQ-0013 — API-key isolation from the browser.** Browser never holds the backend's static API key; Next.js Route Handlers attach it server-side and proxy all backend calls.
-**Status:** approved [C1], not started. **Open item:** Product Owner flagged this as the chosen default over full auth (Clerk/NextAuth) or Vercel password protection — revisit if the dashboard's threat model changes (see RISK_REGISTER RISK-0004).
+**Status:** implemented [C1]. Primary artifacts: `frontend/lib/backend-client.ts` (server-only, attaches `BACKEND_API_KEY`), `frontend/lib/route-handler.ts` (`proxyRoute` wrapper), `frontend/app/api/**/route.ts`. **Open item carried forward:** Product Owner flagged this as the chosen default over full auth (Clerk/NextAuth) or Vercel password protection — revisit if the dashboard's threat model changes (see RISK_REGISTER RISK-0004).
 
 **REQ-0014 — Vercel deployment with production guardrails.** Bot protection + AI-bot blocking ON, security headers in `next.config.ts` mirrored in `vercel.json`, `/_next/static/` immutable cache, single-source `robots.ts` disallowing all crawling (`disallow: "/"` — personal tool, no SEO value), per `docs/VERCEL_PRODUCTION_GUARDRAILS.md`.
-**Status:** approved [C1], not started.
+**Status:** implemented [C1] (guardrail configuration only — actual Vercel deployment/production Gate 2 still pending, see STATE.md and the Task 20 post-plan note below). Primary artifacts: `frontend/next.config.ts`, `frontend/vercel.json`, `frontend/app/robots.ts`.
 
 ---
 
@@ -82,8 +82,8 @@ Per the approved design spec, these feature groups from the user's original requ
 | REQ-0007 | Backend | verified [C1] | deps.py |
 | REQ-0008 | Backend | verified [C1] | events.py, main.py |
 | REQ-0009 | Backend | approved [C1] | Dockerfile (deploy pending) |
-| REQ-0010 | Frontend | approved [C1] | not started |
-| REQ-0011 | Frontend | approved [C1] | not started |
-| REQ-0012 | Frontend | approved [C1] | not started |
-| REQ-0013 | Frontend | approved [C1] | not started |
-| REQ-0014 | Frontend | approved [C1] | not started |
+| REQ-0010 | Frontend | implemented [C1] | frontend/app/*, frontend/components/{overview,repo-detail,recommendations,runs,settings}/ |
+| REQ-0011 | Frontend | implemented [C1] | frontend/hooks/*, frontend/providers/*, frontend/app/api/events/route.ts |
+| REQ-0012 | Frontend | implemented [C1] | frontend/lib/*, frontend/hooks/*, frontend/providers/*, frontend/types/api.d.ts, frontend/components/ui/* |
+| REQ-0013 | Frontend | implemented [C1] | frontend/lib/backend-client.ts, frontend/lib/route-handler.ts, frontend/app/api/**/route.ts |
+| REQ-0014 | Frontend | implemented [C1] | frontend/next.config.ts, frontend/vercel.json, frontend/app/robots.ts |

@@ -8,10 +8,9 @@ export const dynamic = "force-dynamic";
 export default async function RecommendationsPage() {
   const queryClient = new QueryClient();
 
-  await Promise.all([
-    queryClient.prefetchQuery({ queryKey: queryKeys.recommendations.all, queryFn: () => api.listRecommendations() }),
-    queryClient.prefetchQuery({ queryKey: queryKeys.repos.all, queryFn: () => api.listRepos() }),
-  ]);
+  const [recommendations, repos] = await Promise.all([api.listRecommendations(), api.listRepos()]);
+  queryClient.setQueryData(queryKeys.recommendations.all, recommendations);
+  queryClient.setQueryData(queryKeys.repos.all, repos);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

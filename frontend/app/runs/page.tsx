@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 export default async function RunsPage() {
   const queryClient = new QueryClient();
 
-  await queryClient.prefetchQuery({ queryKey: queryKeys.runs.all, queryFn: () => api.listRuns() });
+  const runs = await api.listRuns();
+  queryClient.setQueryData(queryKeys.runs.all, runs);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
