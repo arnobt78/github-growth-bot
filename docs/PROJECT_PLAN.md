@@ -19,21 +19,18 @@ The foundation everything else builds on — track repo metrics over time, bench
 
 **Not yet done for backend:** actual VPS deployment (DNS, Coolify app, Postgres provisioning, `alembic upgrade head`) — code is ready, deploy is a manual step tracked as an open item.
 
-### Frontend — 🔜 Next
+### Frontend — ✅ Done (2026-07-21)
 
-Next.js App Router dashboard consuming the backend API:
+Next.js 16 App Router dashboard consuming the backend API:
 
-- Overview page (tracked repos, sparklines, delta badges)
-- Repo detail page (trend charts, benchmark comparison, referrers, recommendations)
-- Recommendations inbox (cross-repo feed, dismiss/filter)
-- Pipeline run history (debugging view)
-- Settings (manage tracked repos)
-- Instant updates everywhere on any CRUD action (dismiss, add/remove repo, manual run) — no page refresh, via TanStack Query + the backend's SSE stream
-- SSR-first rendering: page shell appears instantly, only data regions show inline skeletons
-- Strict TypeScript, shared component library, icon+color conventions throughout
-- Deployed to Vercel with production guardrails (bot protection, security headers, no-crawl robots policy)
+- Overview page (tracked repos, sparklines, delta badges), repo detail page (trend charts, benchmark comparison, referrers, popular paths, recommendations), recommendations inbox, pipeline run history, settings (manage tracked repos)
+- Instant updates everywhere on any CRUD action (dismiss, add/remove repo, manual run) — no page refresh, current tab and every other open tab, via TanStack Query mutations + the backend's SSE stream
+- SSR-first rendering: every page is `force-dynamic` with parallel (`Promise.all`) server-side prefetch directly in `page.tsx`; page shell appears instantly, only data regions show inline skeletons, no `loading.tsx` anywhere
+- Strict TypeScript throughout, types generated from the backend's live OpenAPI schema, shared `lib/`/`hooks/`/`providers/`/`components/ui/` layer, icon+color conventions on every title/label/button
+- API key never reaches the browser — Next.js Route Handlers proxy every backend call server-side
+- Production guardrails configured for Vercel (bot protection, security headers, no-crawl robots policy) — actual deployment still pending, tracked separately
 
-**Status:** design approved (see spec), not yet built. Will follow the same process as the backend: brainstorm → design doc → implementation plan → subagent-driven build → final review.
+**Status:** built via 20-task subagent-driven plan (`docs/superpowers/plans/2026-07-20-github-growth-bot-frontend.md`), each task independently reviewed, plus a final whole-branch review. One backend bug found along the way (no cascade-delete on repo foreign keys, causing a 500 on deleting a repo with history) — root-caused and fixed with a proper migration + regression test. A post-plan deep audit then found and closed one more gap: 6 starlette CVEs + 1 pytest CVE reached transitively via a pinned `fastapi` version, fixed by bumping dependencies. Gate 2-accepted (`GATE-0002`).
 
 ## Phase 2+ (Deferred — will get their own design docs when picked up)
 
@@ -55,7 +52,7 @@ No auto-starring, auto-forking, auto-following, or any other artificial engageme
 | 2026-07-20 | Project kickoff, design brainstorm, backend spec + plan approved |
 | 2026-07-20 | Backend built (11 tasks), reviewed, 30/30 tests passing |
 | 2026-07-20 | Agile-V governance adopted, C1 retroactively traceable |
-| TBD | Gate 2 approval for backend sub-scope |
-| TBD | Frontend brainstorm + design |
-| TBD | Frontend build |
+| 2026-07-20 | Gate 2 approved for backend sub-scope (GATE-0001) |
+| 2026-07-21 | Frontend built (20 tasks), reviewed, one backend cascade-delete bug found + fixed, one dependency-CVE gap found + fixed |
+| 2026-07-21 | Gate 2 approved for frontend sub-scope (GATE-0002) |
 | TBD | VPS + Vercel deployment |

@@ -57,16 +57,20 @@ Everything requires `Authorization: Bearer <API_KEY>` except the health check. E
 | `GET /providers/status` | Which LLM providers are near their daily rate limit |
 | `GET /events` | Server-Sent Events stream — pushes live updates when anything changes (a recommendation gets dismissed, a repo gets added, a run completes) |
 
-## Why the frontend (when built) will feel instant
+## Why the frontend feels instant
 
-The design calls for the dashboard's page *shell* — headers, card outlines, buttons, icons — to render immediately on every navigation, with only the actual data numbers showing a brief loading pulse. That's done by fetching data directly in Next.js Server Components (`page.tsx`) in parallel (never one slow query blocking the whole page), and by subscribing every open browser tab to the `/events` SSE stream so any change anywhere (even from a different tab, or the daily scheduled run) shows up everywhere instantly without a refresh.
+The dashboard's page *shell* — headers, card outlines, buttons, icons — renders immediately on every navigation; only the actual data numbers show a brief loading pulse (no `loading.tsx` anywhere). Each of the 5 pages (Overview, repo detail, recommendations inbox, pipeline runs, settings) is a Next.js Server Component (`page.tsx`, `export const dynamic = "force-dynamic"`) that fetches its data server-side, in parallel via `Promise.all` — never one slow query blocking the whole page — then hands it to a `use client` component through TanStack Query's `HydrationBoundary`.
+
+Every open browser tab also subscribes to the backend's `/events` SSE stream (`hooks/use-live-events.ts`). Any change anywhere — dismissing a recommendation, adding/removing a repo, triggering a run, or the daily scheduled run finishing — invalidates the relevant TanStack Query cache keys and shows up everywhere instantly, current tab and every other open tab, without a page refresh.
+
+The browser never holds the backend's API key: Next.js Route Handlers under `frontend/app/api/**` proxy every backend call server-side, using the same typed `lib/api.ts` client the Server Components use for SSR.
 
 ## Safety rails baked into the design
 
 - **No write access to GitHub, anywhere.** `GitHubClient` only has `get_*`/`has_file`/`search_similar_repos` methods — there is no method that could star, fork, follow, or otherwise touch another account's repo, even by accident.
 - **Every AI claim is checked against real data** before it's ever shown to you (the Validator stage).
 - **A single tracked repo's failure never affects the others** — per-stage, per-repo error isolation all the way through the pipeline.
-- **The backend's API key never reaches the browser** — the (planned) Next.js frontend proxies every call server-side.
+- **The backend's API key never reaches the browser** — the Next.js frontend proxies every call server-side.
 
 ## Where to go deeper
 
@@ -75,4 +79,4 @@ The design calls for the dashboard's page *shell* — headers, card outlines, bu
 - What went wrong during build and how it got caught: `../.agile-v/CAPA_LOG.md`
 - Known accepted risks: `../.agile-v/RISK_REGISTER.md`
 - Original design conversation: `superpowers/specs/2026-07-20-github-growth-bot-design.md`
-- Task-by-task implementation plan: `superpowers/plans/2026-07-20-github-growth-bot-backend.md`
+- Task-by-task implementation plans: `superpowers/plans/2026-07-20-github-growth-bot-backend.md`, `superpowers/plans/2026-07-20-github-growth-bot-frontend.md`
