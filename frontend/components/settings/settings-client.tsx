@@ -37,6 +37,7 @@ export function SettingsClient() {
                     size="icon"
                     aria-label={`Stop tracking ${repo.owner}/${repo.name}`}
                     onClick={() => deleteRepo.mutate(repo.id)}
+                    disabled={deleteRepo.isPending}
                   >
                     <Trash2 className="h-4 w-4 text-red-500" aria-hidden="true" />
                   </Button>
