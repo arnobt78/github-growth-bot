@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from app.github_client import GitHubClient
+from app.github_client import GitHubAuthError, GitHubClient
 
 
 @pytest.fixture
@@ -60,3 +60,36 @@ def test_has_file_false(gh_client):
 def test_search_similar_repos(gh_client):
     results = gh_client.search_similar_repos(language="python", topic="cli", limit=5)
     assert results[0]["full_name"] == "similar/repo"
+
+
+def test_get_repo_raises_github_auth_error_on_401():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, json={"message": "Bad credentials"})
+
+    transport = httpx.MockTransport(handler)
+    http_client = httpx.Client(transport=transport, base_url="https://api.github.com")
+    client = GitHubClient(token="expired-token", http_client=http_client)
+
+    with pytest.raises(GitHubAuthError):
+        client.get_repo("octocat", "hello-world")
+
+
+def test_search_similar_repos_caches_across_instances():
+    from app.github_client import GitHubClient
+
+    GitHubClient._benchmark_cache.clear()
+    call_count = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        call_count["n"] += 1
+        return httpx.Response(200, json={"items": [{"full_name": "torvalds/linux"}]})
+
+    transport = httpx.MockTransport(handler)
+
+    client_a = GitHubClient(token="token-a", http_client=httpx.Client(transport=transport, base_url="https://api.github.com"))
+    client_b = GitHubClient(token="token-b", http_client=httpx.Client(transport=transport, base_url="https://api.github.com"))
+
+    client_a.search_similar_repos(language="python", topic="cli", limit=5)
+    client_b.search_similar_repos(language="python", topic="cli", limit=5)
+
+    assert call_count["n"] == 1
