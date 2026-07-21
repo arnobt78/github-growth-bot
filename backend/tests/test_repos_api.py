@@ -24,3 +24,34 @@ def test_requires_api_key():
     unauthenticated = TestClient(app)
     resp = unauthenticated.get("/repos")
     assert resp.status_code == 401
+
+
+def test_repo_isolated_per_user(client, other_user_client):
+    create_resp = client.post("/repos", json={"owner": "octocat", "name": "mine"})
+    repo_id = create_resp.json()["id"]
+
+    other_list = other_user_client.get("/repos")
+    assert other_list.json() == []
+
+    other_get = other_user_client.get(f"/repos/{repo_id}")
+    assert other_get.status_code == 404
+
+    other_delete = other_user_client.delete(f"/repos/{repo_id}")
+    assert other_delete.status_code == 404
+
+
+def test_repo_quota_enforced(client):
+    from app.db import SessionLocal
+    from app.models import User
+
+    db = SessionLocal()
+    user = db.query(User).filter(User.github_id == "12345").one()
+    user.max_tracked_repos = 1
+    db.commit()
+    db.close()
+
+    first = client.post("/repos", json={"owner": "octocat", "name": "one"})
+    assert first.status_code == 201
+
+    second = client.post("/repos", json={"owner": "octocat", "name": "two"})
+    assert second.status_code == 403
