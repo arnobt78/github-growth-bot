@@ -68,14 +68,75 @@ Full design: `docs/superpowers/specs/2026-07-21-multi-tenant-saas-design.md`.
 
 Fonts, icon/color consistency pass, and an "agentic pipeline" visualization — showing the 7-stage pipeline actually running live (which stage is active, what it found) rather than just its end results, since that's the most portfolio-differentiating thing this project has and it's currently invisible to a viewer.
 
-## Phase 4+ (Deferred — will get their own design docs when picked up)
+## Phase 4: Professional Automation & Growth Platform (planned, after Phase 2)
 
-From the original feature request, explicitly scoped out of Phase 1, now understood to run per-user once Phase 2 lands:
+Turns the product from "tracks your repo's numbers" into "an agentic co-pilot that grows your repo for you" — the full feature set originally sketched in `docs/PROJECT_IDEA.md`, now scoped into concrete, independently buildable sub-projects. Every sub-project below still goes through its own `superpowers:brainstorming` → design spec → `superpowers:writing-plans` → `superpowers:subagent-driven-development` cycle before implementation starts — this section is the architecture that governs those specs, not a substitute for them.
 
-- **README/docs/topics improvement suggestions** — SEO-friendly docs generation, missing-documentation detection, topic/tag recommendations
-- **Issue/discussion auto-response** — bot reads new issues/discussions, drafts or posts responses
-- **Release automation** — auto-generated release notes; demo GIF/video generation on new releases
-- **Community & trend discovery** — monitor similar repos for contribution opportunities, recommend relevant communities/forums, analyze GitHub trends for discoverability
+### Four governing decisions (made before any of this was written)
+
+1. **Automation engine is native, not n8n.** Every "automation" below is expressed as a `Stage`/`PipelineRunner` pipeline — the same load-bearing contract from Phase 1 (`backend/app/pipeline/base.py`: `Stage.run(ctx: PipelineContext) -> PipelineContext`, per-stage exception isolation) — scheduled via APScheduler jobs, not a second workflow-automation service. Reasoning: one Coolify container instead of two, no new secrets/attack surface/DB to secure, and it reuses infrastructure (rate limiting, circuit breaker, per-user scoping, SSE) that's already built and tested rather than re-solving the same problems inside a separate tool. n8n is not ruled out permanently — if a specific future integration turns out to be genuinely visual/workflow-editor-shaped, it can be added later as an optional add-on service without touching this core.
+2. **Every external-facing action is draft-and-approve.** Nothing posts to GitHub, LinkedIn, X, Reddit, Dev.to, or an Awesome list, and no issue/discussion reply goes out, without the Product Owner (or, later, the signed-in tenant) explicitly approving it first in the dashboard. This generalizes the existing Recommendations-inbox pattern (dismissable cards backed by a status column) rather than inventing a new UI. Reasoning: autonomous posting on a real account risks platform ToS violations, spam flags, and reputational damage from a low-quality auto-reply — none of which is worth the saved click.
+3. **"Demo videos" means real screen recordings, not synthetic AI video.** Playwright drives the actual deployed dashboard; `ffmpeg` composites the recording into a GIF/MP4. Ollama and LlamaIndex are text/retrieval tools — neither generates video — so they play no role in this sub-project. AI-generated synthetic/avatar video is an explicit non-goal for now (cost-per-generation, external API dependency, no clear payoff over an accurate real walkthrough).
+4. **Local Ollama is an optional dev-time provider, not assumed in the production `LLMRouter` chain.** The existing 6-provider free-tier fallback (Groq → Gemini → OpenRouter → Hugging Face → Cloudflare Workers AI → Vercel AI Gateway) already solves "never blocked by one rate limit" at zero infra cost. Adding a 7th, self-hosted Ollama provider would mean running an LLM runtime alongside Postgres and the backend on the same Hetzner VPS — real RAM/CPU contention with no clear benefit over the existing free-tier chain. Revisit only if a specific feature needs a model none of the 6 providers offer.
+
+### The Agentic Content Pipeline (the engine every content-generating feature below shares)
+
+Phase 1 already proved this 7-stage shape works (`Extractor → Preprocessor → Analyzer → Optimizer → Synthesizer → Validator → Assembler`, `backend/app/pipeline/*.py`). Phase 4 does not reinvent multi-agent orchestration — it defines a **second pipeline template** using the identical `Stage` contract, purpose-built for generating content (not just analyzing metrics):
+
+| Stage | Responsibility | Reuses from Phase 1 |
+|---|---|---|
+| Extractor | Pull the raw material for the task — repo README/LICENSE/topics, commit/PR history since last release, a candidate HN/Reddit/Discussions thread, etc. | `GitHubClient` |
+| Analyzer | Filter out low-quality or duplicate source material before it burns LLM budget | New — content-specific quality/duplicate heuristics |
+| Preprocessor | Clean and normalize text (strip markdown noise, truncate to relevant sections) | Pattern from `preprocessor.py` |
+| Optimizer | Trim/reorder the assembled context to fit the target LLM's token budget | Pattern from `optimizer.py` |
+| Synthesizer | Generate **N candidate outputs in parallel** — via `LLMRouter`'s multiple providers and/or prompt variants — instead of one shot | Extends `LLMRouter`; new N-way fan-out |
+| Validator | Score and fact-check every candidate the same way the existing hallucination-guard cross-checks cited numbers today; reject or down-rank any candidate that invents facts | `validator.py`'s existing cross-check logic, extended to multi-candidate judging |
+| Assembler | Package the winning (or best-merged) candidate as a `Draft` row, not a final answer — nothing this pipeline produces is shown externally until a human approves it | Pattern from `assembler.py`; new `Draft` target instead of `Recommendation` |
+
+This is the "parallel agents racing, judge picks the winner" pattern you described — implemented as best-of-N sampling at the Synthesizer stage plus an LLM-as-judge Validator, not a new framework. It directly powers README/SEO-doc suggestions, release notes, topic/tag recommendations, and issue/discussion reply drafts (sub-projects 4B/4C/4D/4F below) — one pipeline template, several `PipelineContext` inputs.
+
+### New shared data model: the Draft Queue
+
+One new table backs every draft-and-approve feature, instead of a bespoke table per feature:
+
+```text
+Draft
+  id: int
+  user_id: int (FK → users.id, CASCADE)
+  repo_id: int | null (FK → repos.id, CASCADE — null for account-level drafts e.g. a community-monitoring digest)
+  kind: str   # "readme_suggestion" | "topic_suggestion" | "release_notes" | "social_post" | "issue_reply" | "demo_asset"
+  target: str  # e.g. "linkedin" | "x" | "reddit" | "devto" | "github_issue:123" | "readme"
+  content: JSON  # the generated payload (text, diff, or asset URL)
+  status: str  # "pending" | "approved" | "rejected" | "posted" | "failed"
+  created_at: datetime
+  reviewed_at: datetime | null
+```
+
+The dashboard gets one new "Drafts" inbox reusing the exact card/dismiss interaction already built for Recommendations — approve triggers the actual external action (GitHub PR, social API call, email), reject just marks it dead, no retry.
+
+### Sub-projects, in recommended build order
+
+| # | Sub-project | What it ships | Depends on |
+|---|---|---|---|
+| 4A | **Automation engine core** | Generalized `PipelineRunner` invocation for named pipeline templates (not just the analytics one); `Draft` table + API (`/drafts`, approve/reject endpoints) + dashboard inbox; APScheduler jobs per feature, per user | Existing `PipelineRunner`, `Recommendation` UI pattern |
+| 4B | **Content generation pipeline** | README improvement suggestions, missing-documentation detection, topic/tag recommendations, SEO-friendly doc generation — all land as `Draft` rows via the Agentic Content Pipeline above | 4A |
+| 4E | **Notifications & alerting** | Resend (transactional email API, generous free tier) sends an alert on pipeline-run failure, `needs_reauth` circuit-breaker trips, and new Drafts ready for review. Uses `User.email`, which is nullable today (OAuth scope is `read:user public_repo`, not `user:email` — GitHub doesn't guarantee a public email exists); Settings page gets an optional "notification email" fallback field for users with no public GitHub email | 4A |
+| 4C | **Release automation** | On a new GitHub release/tag (polled or webhook), auto-generate release notes as a Draft; on approval, also queues demo-asset regeneration (see 4G) and cross-post Drafts to LinkedIn/X/Reddit/Dev.to for that platform's own approval | 4A, 4B |
+| 4D | **Community & trend monitoring** | Scheduled jobs poll HN (Algolia HN Search API, public, no auth), Reddit (needs a registered Reddit API app, read-only search), and GitHub Discussions (GraphQL, covered by the existing `public_repo` OAuth scope) for keyword-relevant mentions of tracked repos/topics; surfaced as an "Opportunities" inbox — informational only, any reply always goes through 4F | 4A |
+| 4F | **Issue/discussion auto-response** | Drafts a suggested reply (via the Agentic Content Pipeline) to new issues/discussions on tracked repos; always draft-and-approve before posting via the GitHub API | 4A, 4B, 4D |
+| 4G | **Demo asset generation** | Playwright drives the live dashboard, `ffmpeg` composites a GIF/MP4 walkthrough, triggered on new release (4C) or on demand; stored on the VPS disk (or Cloudflare R2 if size becomes an issue) and attached to the release Draft | 4C |
+
+Each row's "depends on" column is the build order — 4A is the prerequisite for everything else, 4B/4E can build in either order once 4A lands, and 4C/4D/4F/4G each need at least one earlier sub-project's output.
+
+### New external dependencies (documented in `.env.example` when each sub-project actually lands, not upfront)
+
+| Sub-project | Service | Auth model | Notes |
+|---|---|---|---|
+| 4E | Resend | API key | Single provider is enough for transactional email — this isn't the free-tier-exhaustion problem `LLMRouter` solves for LLM calls |
+| 4C | LinkedIn, X, Reddit, Dev.to | Each needs its own developer app registration (OAuth for LinkedIn/X/Reddit; a simple API key for Dev.to) | Same one-app-per-environment friction as the GitHub OAuth App set up in Phase 2 — each platform's app is a separate Change Request when built |
+| 4D | HN (Algolia), GitHub Discussions | None (HN) / existing GitHub OAuth token (Discussions) | No new credentials needed |
+| 4D | Reddit | OAuth app (client id/secret) | Needed even for read-only search past small rate limits |
+| 4F | GitHub Issues/Discussions write | Existing per-user GitHub OAuth token | Requires re-checking whether `public_repo` scope covers issue/discussion comments on repos the user doesn't own — likely needs the broader `public_repo` write already granted, but confirm against a real repo before this sub-project's own spec is finalized |
 
 ## Explicit Non-Goal (permanent, not a phase)
 
@@ -92,5 +153,7 @@ No auto-starring, auto-forking, auto-following, or any other artificial engageme
 | 2026-07-21 | Frontend built (20 tasks), reviewed, one backend cascade-delete bug found + fixed, one dependency-CVE gap found + fixed |
 | 2026-07-21 | Gate 2 approved for frontend sub-scope (GATE-0002) |
 | 2026-07-21/22 | Multi-tenant SaaS foundation designed and built (18 tasks: 11 backend, 7 frontend), whole-backend review + final whole-branch review, both clean after fix rounds |
-| TBD | Live E2E OAuth verification (needs a real GitHub OAuth App) + Gate 2 for the multi-tenant sub-scope |
+| 2026-07-22 | Live E2E OAuth verification completed against a real registered GitHub OAuth App; Gate 2 approved for the multi-tenant sub-scope (GATE-0003) |
+| 2026-07-22 | Phase 4 (Professional Automation & Growth Platform) architecture documented; four governing decisions made (native automation engine, draft-and-approve publishing, real screen-recording demos, Ollama as dev-time-only) |
 | TBD | VPS + Vercel deployment |
+| TBD | Phase 3 (visual/portfolio polish) and Phase 4 sub-projects (4A→4G), each via its own brainstorm → spec → plan → subagent-driven build |
