@@ -2,12 +2,18 @@ import os
 import pytest
 import tempfile
 
+from cryptography.fernet import Fernet
+
 _test_db_dir = tempfile.mkdtemp()
 _test_db_path = os.path.join(_test_db_dir, "test.db")
 
 os.environ.setdefault("DATABASE_URL", f"sqlite:///{_test_db_path}")
 os.environ.setdefault("API_KEY", "test-key")
-os.environ.setdefault("TOKEN_ENCRYPTION_KEY", "zTgP1kM3vXG9wQeYrT6uI0oP2aS4dF7gH9jK1lN3mB8=")
+# Generated fresh each test run rather than hardcoded — a static Fernet-format
+# string in source is indistinguishable from a real secret to scanners (and to
+# a future reader), even though this key only ever encrypts fake tokens in the
+# ephemeral test DB above.
+os.environ.setdefault("TOKEN_ENCRYPTION_KEY", Fernet.generate_key().decode())
 os.environ.setdefault("INTERNAL_AUTH_SECRET", "test-only-internal-secret-do-not-use-in-prod")
 
 
