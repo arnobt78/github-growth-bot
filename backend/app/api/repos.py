@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -9,6 +9,7 @@ from app.db import get_db
 from app.deps import require_api_key, require_user
 from app.events import broadcaster
 from app.models import Repo, User
+from app.rate_limit import limiter
 
 router = APIRouter(prefix="/repos", tags=["repos"], dependencies=[Depends(require_api_key)])
 
@@ -33,7 +34,9 @@ def list_repos(db: Session = Depends(get_db), current_user: User = Depends(requi
 
 
 @router.post("", response_model=RepoOut, status_code=201)
+@limiter.limit("10/minute")
 def create_repo(
+    request: Request,
     payload: RepoCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user),

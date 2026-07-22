@@ -1,8 +1,11 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.config import get_settings
+from app.rate_limit import limiter
 from app.api.events import router as events_router
 from app.api.repos import router as repos_router
 from app.api.insights import router as insights_router
@@ -16,6 +19,9 @@ from app.pipeline.jobs import run_pipeline_for_all_repos
 settings = get_settings()
 
 app = FastAPI(title="GitHub Growth Bot API")
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,

@@ -18,6 +18,10 @@ def _reset_db():
     import app.models  # noqa: F401
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+
+    from app.rate_limit import limiter
+    limiter.reset()
+
     yield
 
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.db import SessionLocal, get_db
 from app.deps import require_api_key, require_user
 from app.models import PipelineRun, StageRun, User
+from app.rate_limit import limiter
 
 router = APIRouter(prefix="/runs", tags=["runs"], dependencies=[Depends(require_api_key)])
 
@@ -45,8 +46,9 @@ def list_runs(db: Session = Depends(get_db), current_user: User = Depends(requir
 
 
 @router.post("", response_model=TriggerRunOut, status_code=202)
+@limiter.limit("10/minute")
 def trigger_run(
-    background_tasks: BackgroundTasks, current_user: User = Depends(require_user)
+    request: Request, background_tasks: BackgroundTasks, current_user: User = Depends(require_user)
 ) -> TriggerRunOut:
     background_tasks.add_task(_run_pipeline_background, current_user.id)
     return TriggerRunOut(status="started")
