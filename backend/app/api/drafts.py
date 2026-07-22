@@ -54,6 +54,8 @@ def review_draft(
         raise HTTPException(status_code=409, detail="Draft has already been reviewed")
 
     draft.status = payload.status
+    # Reuse created_at's own tzinfo (set by models._now(), i.e. UTC) rather than a
+    # bare datetime.now() — keeps reviewed_at timezone-aware and consistent with it.
     draft.reviewed_at = datetime.now(draft.created_at.tzinfo)
     db.commit()
     db.refresh(draft)

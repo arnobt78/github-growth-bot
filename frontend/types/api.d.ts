@@ -387,6 +387,13 @@ export interface components {
             /** Uniques */
             uniques: number;
         };
+        /** ProviderStatusOut */
+        ProviderStatusOut: {
+            /** Provider */
+            provider: string;
+            /** Calls Today */
+            calls_today: number;
+        };
         /** RecommendationOut */
         RecommendationOut: {
             /** Id */
@@ -1106,9 +1113,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["ProviderStatusOut"][];
                 };
             };
             /** @description Validation Error */

@@ -11,3 +11,6 @@ export type Draft = components["schemas"]["DraftOut"];
 export type PipelineRun = components["schemas"]["PipelineRunOut"];
 export type StageRun = components["schemas"]["StageRunOut"];
 export type RepoCreate = components["schemas"]["RepoCreate"];
+export type ProviderStatus = components["schemas"]["ProviderStatusOut"];
+export type UserUpsert = components["schemas"]["UserUpsert"];
+export type UserOut = components["schemas"]["UserOut"];

@@ -5,15 +5,16 @@ import type {
   Insights,
   PipelineRun,
   PopularPath,
+  ProviderStatus,
   Recommendation,
   Referrer,
   Repo,
   RepoCreate,
   Snapshot,
   StageRun,
+  UserOut,
+  UserUpsert,
 } from "@/lib/api-types";
-
-type ProviderStatus = { provider: string; calls_today: number };
 
 export const api = {
   listRepos: () => backendFetch<Repo[]>("/repos"),
@@ -48,14 +49,8 @@ export const api = {
 
   providerStatus: () => backendFetch<ProviderStatus[]>("/providers/status"),
 
-  upsertUser: (payload: {
-    github_id: string;
-    username: string;
-    avatar_url: string;
-    email: string | null;
-    access_token: string;
-  }) =>
-    backendFetchSystem<{ id: number; github_id: string }>("/users/upsert", {
+  upsertUser: (payload: UserUpsert) =>
+    backendFetchSystem<UserOut>("/users/upsert", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
