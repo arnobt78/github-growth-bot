@@ -85,6 +85,15 @@ Source of truth: `docs/superpowers/specs/2026-07-21-multi-tenant-saas-design.md`
 
 ---
 
+## Phase 4A: Automation Engine Core Requirements (C1, Phase 4A — Implemented)
+
+Source of truth: `docs/superpowers/specs/2026-07-22-phase4a-automation-engine-core-design.md`. First sub-project of the Phase 4 roadmap (`docs/PROJECT_PLAN.md`) — ships the draft-and-approve infrastructure every later Phase 4 sub-project (4B–4G) writes into. Deliberately plumbing-only: no content producer exists yet, so the dashboard inbox legitimately shows its empty state until 4B lands.
+
+**REQ-0020 — `Draft` model, per-user REST API, and real-time inbox.** New `Draft` table (`user_id`, nullable `repo_id`, `kind`/`target`/`status` as plain strings, `content` as JSON, `reviewed_at`), scoped and isolated exactly like every other per-user resource (404 not 403 on cross-user access). `GET /drafts` + `PATCH /drafts/{id}` (`status: "approved" | "rejected"`, one-way transition — 409 on an already-reviewed draft, 422 on an invalid status value). New SSE event `draft_updated` reuses the existing `EventBroadcaster` unchanged. Frontend mirrors the Recommendations page/hook/component trio byte-for-byte, including a new `Drafts` nav entry (`Inbox` icon, `text-emerald-500`).
+**Status:** verified [C1]. Primary artifacts: `backend/app/models.py::Draft`, `backend/alembic/versions/a2eaa148e044_*.py`, `backend/app/api/drafts.py`, `backend/tests/test_drafts_api.py`, `frontend/lib/api-types.ts`/`api.ts`/`query-keys.ts`, `frontend/hooks/use-drafts.ts`, `frontend/hooks/use-live-events.ts`, `frontend/app/api/drafts/**`, `frontend/app/drafts/page.tsx`, `frontend/components/drafts/drafts-client.tsx`, `frontend/components/nav-sidebar.tsx`. Built via a 3-task subagent-driven plan (`docs/superpowers/plans/2026-07-22-phase4a-automation-engine-core.md`), each task independently reviewed (one fix round on Task 1 — brief's own test/reference-code contradiction on the 409 response shape, resolved by keeping the codebase-wide `{detail}` error convention), final whole-branch review clean (opus, 0 Critical/Important, 3 Minor forward-looking notes for 4B). Backend 76/76 tests, `pip-audit` clean. Frontend `tsc`/`eslint`/`vitest` (9/9)/`next build` all clean.
+
+---
+
 ## Deferred to Later Cycles (explicitly out of C1 scope)
 
 Per the approved design spec, these feature groups from the user's original request are deferred and will be opened as new cycles (C2+) with their own REQ sets when picked up: README/docs/topics improvement suggestions + SEO doc generation; issue/discussion auto-response; release-notes automation + demo GIF/video generation; community & trend discovery (similar-repo contribution opportunities, forum recommendations).
@@ -113,5 +122,6 @@ Per the approved design spec, these feature groups from the user's original requ
 | REQ-0017 | Multi-tenant | verified [C1] | backend/app/{internal_auth,token_crypto,deps}.py, frontend/lib/{internal-auth,backend-client}.ts |
 | REQ-0018 | Multi-tenant | verified [C1] | backend/app/pipeline/jobs.py, backend/app/{github_client,events}.py, backend/app/api/{runs,events}.py |
 | REQ-0019 | Multi-tenant | verified [C1] | backend/app/rate_limit.py, backend/app/api/{repos,runs}.py |
+| REQ-0020 | Phase 4A | verified [C1] | backend/app/models.py::Draft, backend/app/api/drafts.py, frontend/hooks/use-drafts.ts, frontend/components/drafts/* |
 
 **Frontend sub-scope Gate 2:** Approved (`GATE-0002`, 2026-07-21) — REQ-0010–REQ-0013 verified; REQ-0014's guardrail *code* is verified but actual Vercel deployment remains a separate, still-open action gated by POL-0006.

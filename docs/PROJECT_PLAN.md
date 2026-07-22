@@ -68,7 +68,7 @@ Full design: `docs/superpowers/specs/2026-07-21-multi-tenant-saas-design.md`.
 
 Fonts, icon/color consistency pass, and an "agentic pipeline" visualization — showing the 7-stage pipeline actually running live (which stage is active, what it found) rather than just its end results, since that's the most portfolio-differentiating thing this project has and it's currently invisible to a viewer.
 
-## Phase 4: Professional Automation & Growth Platform (planned, after Phase 2)
+## Phase 4: Professional Automation & Growth Platform (in progress, after Phase 2)
 
 Turns the product from "tracks your repo's numbers" into "an agentic co-pilot that grows your repo for you" — the full feature set originally sketched in `docs/PROJECT_IDEA.md`, now scoped into concrete, independently buildable sub-projects. Every sub-project below still goes through its own `superpowers:brainstorming` → design spec → `superpowers:writing-plans` → `superpowers:subagent-driven-development` cycle before implementation starts — this section is the architecture that governs those specs, not a substitute for them.
 
@@ -118,7 +118,7 @@ The dashboard gets one new "Drafts" inbox reusing the exact card/dismiss interac
 
 | # | Sub-project | What it ships | Depends on |
 |---|---|---|---|
-| 4A | **Automation engine core** | Generalized `PipelineRunner` invocation for named pipeline templates (not just the analytics one); `Draft` table + API (`/drafts`, approve/reject endpoints) + dashboard inbox; APScheduler jobs per feature, per user | Existing `PipelineRunner`, `Recommendation` UI pattern |
+| 4A | **Automation engine core** — ✅ Done (2026-07-22) | `Draft` table + API (`/drafts`, approve/reject) + real-time SSE + dashboard inbox, mirroring the `Recommendation` pattern byte-for-byte. The generalized `PipelineRunner`-template invocation and per-feature APScheduler jobs originally sketched here were deliberately deferred to 4B (YAGNI — no second pipeline exists yet to generalize against; see the design spec's "Scope" section). REQ-0020, `docs/superpowers/specs/2026-07-22-phase4a-automation-engine-core-design.md`, `docs/superpowers/plans/2026-07-22-phase4a-automation-engine-core.md`. | Existing `PipelineRunner`, `Recommendation` UI pattern |
 | 4B | **Content generation pipeline** | README improvement suggestions, missing-documentation detection, topic/tag recommendations, SEO-friendly doc generation — all land as `Draft` rows via the Agentic Content Pipeline above | 4A |
 | 4E | **Notifications & alerting** | Resend (transactional email API, generous free tier) sends an alert on pipeline-run failure, `needs_reauth` circuit-breaker trips, and new Drafts ready for review. Uses `User.email`, which is nullable today (OAuth scope is `read:user public_repo`, not `user:email` — GitHub doesn't guarantee a public email exists); Settings page gets an optional "notification email" fallback field for users with no public GitHub email | 4A |
 | 4C | **Release automation** | On a new GitHub release/tag (polled or webhook), auto-generate release notes as a Draft; on approval, also queues demo-asset regeneration (see 4G) and cross-post Drafts to LinkedIn/X/Reddit/Dev.to for that platform's own approval | 4A, 4B |
@@ -155,5 +155,7 @@ No auto-starring, auto-forking, auto-following, or any other artificial engageme
 | 2026-07-21/22 | Multi-tenant SaaS foundation designed and built (18 tasks: 11 backend, 7 frontend), whole-backend review + final whole-branch review, both clean after fix rounds |
 | 2026-07-22 | Live E2E OAuth verification completed against a real registered GitHub OAuth App; Gate 2 approved for the multi-tenant sub-scope (GATE-0003) |
 | 2026-07-22 | Phase 4 (Professional Automation & Growth Platform) architecture documented; four governing decisions made (native automation engine, draft-and-approve publishing, real screen-recording demos, Ollama as dev-time-only) |
+| 2026-07-22 | Pre-Phase-4 codebase audit: fixed a Next.js build-warning (redundant Cache-Control header), migrated `on_event` to `lifespan` (RISK-0003 resolved), fixed a flaky network-coupled backend test, added `force-dynamic` to `/sign-in` for consistency |
+| 2026-07-22 | Phase 4A (Automation engine core) designed, planned, and built (3 tasks), final whole-branch review clean — REQ-0020 |
 | TBD | VPS + Vercel deployment |
-| TBD | Phase 3 (visual/portfolio polish) and Phase 4 sub-projects (4A→4G), each via its own brainstorm → spec → plan → subagent-driven build |
+| TBD | Phase 3 (visual/portfolio polish) and Phase 4 sub-projects 4B→4G, each via its own brainstorm → spec → plan → subagent-driven build |
