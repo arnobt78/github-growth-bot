@@ -46,8 +46,10 @@ Use these when a task calls for a specialized role rather than generic implement
 - Every new API endpoint: `dependencies=[Depends(require_api_key)]` (POL-0002), path avoids ad-blocker keywords (POL-0003).
 - Any DB-writing code sharing a session with `PipelineRunner`: be aware of CAPA-0001's lesson — a stage's own exception handling must not assume the shared session is clean afterward.
 - `LLMRouter` provider order and Groq allowlist are policy-locked (POL / REQ-0004) — changing them requires a CR (CHANGE_LOG.md), not a silent edit.
+- Every resource is per-user scoped via `require_user` (REQ-0017); cross-user access to an existing resource is 404, never 403.
+- Draft-and-approve (REQ-0020, `app/api/drafts.py`): any feature acting externally writes a `Draft` row first — nothing posts/replies/publishes without human approval via `PATCH /drafts/{id}`.
 
-**Frontend (Next.js, when built):**
+**Frontend (Next.js, built):**
 - SSR data-fetching directly in `page.tsx`; only `use client` code in `components/`.
 - No `loading.tsx` files; targeted inline skeletons on data-bearing regions only.
 - Parallel `Promise.all` prefetch, not sequential `await`s.
@@ -67,7 +69,7 @@ Use these when a task calls for a specialized role rather than generic implement
 
 ## 5. Cycle Boundary Checklist (before opening C2 or archiving C1)
 
-1. All C1 REQs (REQ-0000–REQ-0014) reach `verified` status.
+1. All C1 REQs (REQ-0000–REQ-0020, growing as Phase 4 sub-projects land) reach `verified` status.
 2. `VALIDATION_SUMMARY.md` shows EvalGate PASS for the full cycle (not just backend sub-scope).
 3. Compliance Auditor pass: no open Critical risks, no overdue CAPAs, ATM fully linked.
 4. Gate 2 approval recorded in `APPROVALS.md`, `CHECKPOINTS.md` interrupt closed.

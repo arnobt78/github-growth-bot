@@ -6,5 +6,5 @@ No revalidations performed yet — project is newly under Agile-V governance as 
 
 - Groq deprecates `llama-3.1-8b-instant` / `llama-3.3-70b-versatile` on 2026-08-16 (not used by this codebase, but confirms the provider's deprecation cadence — spot-check `app/llm_router.py`'s allowlist against Groq's current model catalog at that date).
 - Any change to `app/llm_router.py`'s provider/model configuration.
-- FastAPI major version bump (currently pinned `fastapi==0.115.6`) — re-check `@app.on_event` deprecation status (RISK-0003).
+- FastAPI major version bump (currently pinned `fastapi==0.139.2`, bumped from `0.115.6` per RISK-0013). `@app.on_event` deprecation is resolved (RISK-0003, migrated to `lifespan` 2026-07-22) — no further action needed on that specific item.
 - `config.json`'s `model_versions` (Claude tiers used for agent tooling) change.

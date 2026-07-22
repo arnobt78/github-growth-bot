@@ -37,4 +37,4 @@ See RISK_REGISTER.md for the full list with severity. Summary: `StageRun` detail
 
 ## Scope Note
 
-This validates the **backend sub-scope of C1 only** (REQ-0000–REQ-0009). REQ-0010–REQ-0014 (frontend) are approved but unbuilt — C1 is not ready for full cycle acceptance/archival until the frontend sub-scope also passes its own validation.
+This validates the **backend sub-scope of C1 only** (REQ-0000–REQ-0009), as of 2026-07-20. REQ-0010–REQ-0014 (frontend) were approved but unbuilt *at that time*; they are now built and Gate 2-accepted (`GATE-0002`), as are REQ-0015–REQ-0020 (multi-tenant SaaS, Phase 4A) via `GATE-0003`/pending review — see `STATE.md` for current status. This document is a point-in-time record, not rewritten to stay current; several residual items listed above are since resolved (`@app.on_event` → `lifespan`, RISK-0003; `POST /runs` async via `BackgroundTasks`, REQ-0018) — check `RISK_REGISTER.md` for each item's live status rather than trusting this snapshot.

@@ -18,6 +18,6 @@
 | TC-0028 | `tests/test_events.py` | Broadcaster pub/sub, SSE auth | REQ-0008 | [C1] |
 | TC-0029 | `tests/test_pipeline_integration.py` | Full 7-stage pipeline through real `PipelineRunner`, production wiring (`build_stages` pattern) | REQ-0001 | [C1] |
 
-**Regression baseline for C2+:** all 30 above — any future cycle touching backend files must re-run this full suite (`cd backend && .venv/bin/python -m pytest -v`) before Gate 2, per `agile-v-lifecycle` regression rules.
+**Regression baseline for C2+:** backend suite has grown to 76 tests (30 original + multi-tenant SaaS + Phase 4A additions) — any future cycle touching backend files must re-run the full suite (`cd backend && .venv/bin/python -m pytest -v`) before Gate 2, per `agile-v-lifecycle` regression rules. `frontend/`'s suite (`npx vitest run`, 9 tests) plus `tsc`/`eslint`/`next build` must also stay clean for any frontend-touching change.
 
-**Known coverage gaps** (tracked, not blocking — see RISK_REGISTER): no test drives the scheduler's `startup`/`shutdown` lifespan handlers (TestClient fixtures don't use the lifespan context-manager form); no test hits the live SSE stream end-to-end through the module-singleton broadcaster with a real published event.
+**Known coverage gaps** (tracked, not blocking — see RISK_REGISTER): no test hits the live SSE stream end-to-end through the module-singleton broadcaster with a real published event. (The scheduler-lifespan gap noted here previously is resolved — RISK-0003, `app/main.py` migrated `@app.on_event` to `lifespan` on 2026-07-22.)

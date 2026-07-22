@@ -4,7 +4,7 @@ Instructions for Claude Code (or any AI agent) working in this repository.
 
 ## What this project is
 
-A personal GitHub account analytics/growth tool. Full context: [`README.md`](README.md), [`docs/PROJECT_WALKTHROUGH.md`](docs/PROJECT_WALKTHROUGH.md), [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md).
+A multi-tenant GitHub account analytics/growth SaaS, growing into a draft-and-approve automation platform (Phase 4). Full context: [`README.md`](README.md), [`docs/PROJECT_WALKTHROUGH.md`](docs/PROJECT_WALKTHROUGH.md), [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md).
 
 ## Start every session here
 
@@ -28,8 +28,10 @@ A personal GitHub account analytics/growth tool. Full context: [`README.md`](REA
 - Any code sharing a DB session with `PipelineRunner` must not assume the session is clean after an exception — see `.agile-v/CAPA_LOG.md` CAPA-0001 for why (`self.db.rollback()` is required in the runner's exception handler; don't remove it).
 - `LLMRouter`'s provider order and Groq model allowlist (`app/llm_router.py`) are policy-locked — changing them needs a Change Request (`.agile-v/CHANGE_LOG.md`), not a silent edit.
 - Tests live in `backend/tests/`, one file per module being tested, TDD style (failing test → implementation → passing test). Full suite: `.venv/bin/python -m pytest -v`. Should stay at 100% pass with pristine output (no stray warnings).
+- Every resource is per-user scoped (`user_id` FK, filtered in the query, never fetch-then-check) via `app/deps.py::require_user`. Cross-user access to an existing resource returns 404, never 403 (no existence leak). New endpoints must give every response a Pydantic `response_model` — never a bare `list[dict]` — so the frontend's OpenAPI-generated types stay complete.
+- Draft-and-approve pattern (`app/api/drafts.py`, Phase 4A+): any feature that acts externally (posts, replies, publishes) writes a `Draft` row instead of acting directly; nothing external happens until a human approves it via `PATCH /drafts/{id}`.
 
-**Frontend (`frontend/`, when it exists — Next.js App Router, TypeScript):**
+**Frontend (`frontend/` — Next.js App Router, TypeScript):**
 
 - SSR data-fetching goes directly in `page.tsx` (Server Components); only genuinely interactive code goes in `use client` components.
 - No `loading.tsx` files. Page shell (headers, labels, icons, buttons, card frames) renders instantly; only data-bearing regions show inline skeletons matching the real content's dimensions.
