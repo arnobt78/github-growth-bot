@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, History, LayoutDashboard, LogOut, Settings } from "lucide-react";
+import { Bell, History, Inbox, LayoutDashboard, LogOut, Settings } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: LayoutDashboard, color: "text-sky-500" },
   { href: "/recommendations", label: "Recommendations", icon: Bell, color: "text-amber-500" },
+  { href: "/drafts", label: "Drafts", icon: Inbox, color: "text-emerald-500" },
   { href: "/runs", label: "Pipeline Runs", icon: History, color: "text-violet-500" },
   { href: "/settings", label: "Settings", icon: Settings, color: "text-slate-500" },
 ];
