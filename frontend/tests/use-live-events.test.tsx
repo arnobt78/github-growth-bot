@@ -4,6 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { queryKeys } from "@/lib/query-keys";
 import { useLiveEvents } from "@/hooks/use-live-events";
 
+const { useSession } = vi.hoisted(() => ({ useSession: vi.fn() }));
+
+vi.mock("next-auth/react", () => ({ useSession }));
+
 class FakeEventSource {
   static instances: FakeEventSource[] = [];
   listeners: Record<string, ((event: MessageEvent) => void)[]> = {};
@@ -34,6 +38,7 @@ describe("useLiveEvents", () => {
   beforeEach(() => {
     FakeEventSource.instances = [];
     vi.stubGlobal("EventSource", FakeEventSource);
+    useSession.mockReturnValue({ status: "authenticated" });
   });
 
   afterEach(() => {
@@ -54,5 +59,18 @@ describe("useLiveEvents", () => {
     source.emit("repo_added", { id: 1 });
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.repos.all });
+  });
+
+  it("does not open an EventSource connection when signed out", () => {
+    useSession.mockReturnValue({ status: "unauthenticated" });
+    const queryClient = new QueryClient();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Harness />
+      </QueryClientProvider>,
+    );
+
+    expect(FakeEventSource.instances).toHaveLength(0);
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -13,8 +14,13 @@ const EVENT_QUERY_MAP: Record<string, QueryKey[]> = {
 
 export function useLiveEvents() {
   const queryClient = useQueryClient();
+  const { status } = useSession();
 
   useEffect(() => {
+    if (status !== "authenticated") {
+      return;
+    }
+
     const source = new EventSource("/api/events");
 
     const handler = (event: MessageEvent) => {
@@ -31,5 +37,5 @@ export function useLiveEvents() {
     return () => {
       source.close();
     };
-  }, [queryClient]);
+  }, [queryClient, status]);
 }
