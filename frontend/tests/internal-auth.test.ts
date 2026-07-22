@@ -15,9 +15,16 @@ describe("mintInternalUserToken", () => {
     expect(typeof payload.exp).toBe("number");
   });
 
-  it("produces a different signature for a different secret", () => {
+  it("produces a different signature for a different secret", async () => {
     const tokenA = mintInternalUserToken("12345");
+
     vi.stubEnv("INTERNAL_AUTH_SECRET", "a-different-secret");
     vi.resetModules();
+    const { mintInternalUserToken: mintWithDifferentSecret } = await import("@/lib/internal-auth");
+    const tokenB = mintWithDifferentSecret("12345");
+
+    const [, signatureA] = tokenA.split(".");
+    const [, signatureB] = tokenB.split(".");
+    expect(signatureA).not.toBe(signatureB);
   });
 });
