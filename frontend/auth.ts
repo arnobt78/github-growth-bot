@@ -11,7 +11,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       authorization: { params: { scope: "read:user public_repo" } },
     }),
   ],
+  pages: {
+    signIn: "/sign-in",
+  },
   callbacks: {
+    // Required for `auth` to actually gate routes when re-exported as
+    // `proxy` (frontend/proxy.ts, Task 14). Without this, next-auth's
+    // internal `authorized` defaults to `true` unconditionally (see
+    // node_modules/next-auth/lib/index.js) and the proxy becomes a silent
+    // passthrough — no redirect ever fires for unauthenticated requests.
+    authorized({ auth }) {
+      return !!auth?.user;
+    },
     async jwt({ token, account, profile }) {
       // account/profile are only present on the initial sign-in, not on
       // every subsequent token refresh — this is where we bootstrap the
