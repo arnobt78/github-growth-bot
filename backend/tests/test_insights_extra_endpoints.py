@@ -81,3 +81,9 @@ def test_snapshots_isolated_per_user(client, other_user_client):
 
     other_benchmarks = other_user_client.get(f"/repos/{repo_id}/benchmarks")
     assert other_benchmarks.status_code == 404
+
+    other_referrers = other_user_client.get(f"/repos/{repo_id}/referrers")
+    assert other_referrers.status_code == 404
+
+    other_popular_paths = other_user_client.get(f"/repos/{repo_id}/popular-paths")
+    assert other_popular_paths.status_code == 404

@@ -6,6 +6,30 @@ from app.models import PipelineRun, Repo, User
 from app.token_crypto import encrypt_token
 
 
+def _seed_user_with_corrupted_token(github_id: str) -> tuple[int, int]:
+    db = SessionLocal()
+    user = User(
+        github_id=github_id,
+        username=f"user-{github_id}",
+        avatar_url=f"https://avatars.githubusercontent.com/u/{github_id}",
+        email=None,
+        # Not a valid Fernet token at all (corrupted ciphertext / wrong key
+        # after rotation) — decrypt_token() will raise cryptography.fernet.InvalidToken.
+        access_token_encrypted="garbage-not-a-valid-fernet-token",
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    repo = Repo(owner="octocat", name=f"repo-{github_id}", user_id=user.id)
+    db.add(repo)
+    db.commit()
+    db.refresh(repo)
+    user_id, repo_id = user.id, repo.id
+    db.close()
+    return user_id, repo_id
+
+
 def _seed_user_with_repo(github_id: str) -> tuple[int, int]:
     db = SessionLocal()
     user = User(
@@ -96,6 +120,46 @@ def test_run_pipeline_auth_failure_circuit_breaker_is_isolated_per_user(mock_bui
 
     # run_completed only fires for users who had at least one successfully
     # processed repo this run; user A had none (all repos hit needs_reauth).
+    published_user_ids = [call.kwargs.get("user_id") for call in mock_publish.call_args_list]
+    assert user_b_id in published_user_ids
+    assert user_a_id not in published_user_ids
+
+
+@patch("app.events.broadcaster.publish")
+@patch("app.pipeline.jobs.build_stages")
+def test_run_pipeline_survives_undecryptable_token_for_one_user(mock_build_stages, mock_publish):
+    # User A has a corrupted/undecryptable access_token_encrypted (e.g. wrong
+    # encryption key after rotation). The owner lookup + decrypt_token() call
+    # happens OUTSIDE PipelineRunner's own exception isolation, so this must be
+    # caught in run_pipeline_for_all_repos itself — otherwise the raised
+    # cryptography.fernet.InvalidToken would propagate and abort the whole
+    # batch, meaning user B's repo would never even be attempted.
+    user_a_id, repo_a_id = _seed_user_with_corrupted_token("444")
+
+    # User B has a valid, decryptable token and must still be processed
+    # normally in the same batch (real decrypt_token() runs for both users;
+    # only PipelineRunner/build_stages are mocked out).
+    user_b_id, repo_b_id = _seed_user_with_repo("555")
+
+    mock_runner = MagicMock()
+    mock_runner.run_for_repo.side_effect = lambda repo: type("Ctx", (), {"errors": []})()
+    with patch("app.pipeline.jobs.PipelineRunner", return_value=mock_runner):
+        from app.pipeline.jobs import run_pipeline_for_all_repos
+
+        db = SessionLocal()
+        run_pipeline_for_all_repos(db)  # no user_id filter: the daily-job path
+        db.close()
+
+    attempted_repo_ids = [call.args[0].id for call in mock_runner.run_for_repo.call_args_list]
+
+    # User A's repo was never handed to the runner — it failed before that,
+    # at the decrypt step — but the batch did not abort.
+    assert repo_a_id not in attempted_repo_ids
+
+    # User B's repo was still processed despite user A's decrypt failure
+    # earlier in the same batch.
+    assert attempted_repo_ids.count(repo_b_id) == 1
+
     published_user_ids = [call.kwargs.get("user_id") for call in mock_publish.call_args_list]
     assert user_b_id in published_user_ids
     assert user_a_id not in published_user_ids

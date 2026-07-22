@@ -37,6 +37,11 @@ def verify_internal_user_token(token: str) -> str:
 
     padding = "=" * (-len(payload_b64) % 4)
     payload = json.loads(base64.urlsafe_b64decode(payload_b64 + padding))
-    if payload["exp"] < time.time():
+    try:
+        exp = payload["exp"]
+        sub = payload["sub"]
+    except KeyError:
+        raise ValueError("Malformed internal token payload")
+    if exp < time.time():
         raise ValueError("Expired internal token")
-    return str(payload["sub"])
+    return str(sub)

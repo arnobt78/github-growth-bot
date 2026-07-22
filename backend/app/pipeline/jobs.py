@@ -44,8 +44,19 @@ def run_pipeline_for_all_repos(db: Session, user_id: int | None = None) -> None:
         if repo.user_id in failed_auth_user_ids:
             continue
 
-        owner = db.get(User, repo.user_id)
-        gh_client = GitHubClient(token=decrypt_token(owner.access_token_encrypted))
+        try:
+            owner = db.get(User, repo.user_id)
+            gh_client = GitHubClient(token=decrypt_token(owner.access_token_encrypted))
+        except Exception:
+            # Owner lookup / token decryption happens outside PipelineRunner's own
+            # exception isolation (that only covers stage execution inside
+            # run_for_repo), so a missing User row or an undecryptable token
+            # (corrupted ciphertext, rotated encryption key) must be caught here
+            # explicitly — otherwise it would propagate and abort every other
+            # tenant's repos still queued in this same batch.
+            failed_auth_user_ids.add(repo.user_id)
+            continue
+
         runner = PipelineRunner(stages=build_stages(db, gh_client, llm_router), db_session=db)
         ctx = runner.run_for_repo(repo)
 

@@ -71,7 +71,9 @@ def get_repo(
 
 
 @router.delete("/{repo_id}", status_code=204)
+@limiter.limit("10/minute")
 def delete_repo(
+    request: Request,
     repo_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_user)
 ) -> None:
     repo = db.execute(
