@@ -32,7 +32,7 @@ Next.js 16 App Router dashboard consuming the backend API:
 
 **Status:** built via 20-task subagent-driven plan (`docs/superpowers/plans/2026-07-20-github-growth-bot-frontend.md`), each task independently reviewed, plus a final whole-branch review. One backend bug found along the way (no cascade-delete on repo foreign keys, causing a 500 on deleting a repo with history) — root-caused and fixed with a proper migration + regression test. A post-plan deep audit then found and closed one more gap: 6 starlette CVEs + 1 pytest CVE reached transitively via a pinned `fastapi` version, fixed by bumping dependencies. Gate 2-accepted (`GATE-0002`).
 
-## Phase 2: Multi-Tenant SaaS Foundation (in design — 2026-07-21)
+## Phase 2: Multi-Tenant SaaS Foundation — ✅ Done (2026-07-22)
 
 Everything from here on depends on this landing first: today the app is single-tenant (one shared static API key, one global set of tracked repos). This phase turns it into a real multi-tenant SaaS — anyone can sign in with their own GitHub account and track their own repos, fully isolated from every other user's data.
 
@@ -60,7 +60,9 @@ Everything from here on depends on this landing first: today the app is single-t
 
 The six left "not added" aren't skipped out of laziness — building them now would be solving problems this project doesn't have yet at personal-SaaS scale, which is its own kind of technical debt (complexity with no payoff). Each has a stated trigger for revisiting it later.
 
-Full design: `docs/superpowers/specs/2026-07-21-multi-tenant-saas-design.md` (once written and approved).
+Full design: `docs/superpowers/specs/2026-07-21-multi-tenant-saas-design.md`.
+
+**Status:** built via 18-task subagent-driven plan (`docs/superpowers/plans/2026-07-21-github-growth-bot-multi-tenant-saas.md`), each task independently reviewed, plus a whole-backend review (after the 10 backend tasks) and a final whole-branch review (after all 18). Real gaps found and fixed along the way: a `needs_reauth` circuit-breaker marker missing from the plan's own reference code (Task 8); a scheduler blast-radius bug where one tenant's corrupted OAuth token could have aborted the entire nightly run for every user (whole-backend review); and, at final review, two deploy-time hazards — undocumented shared-secret requirements between the frontend/backend `.env` files, and a silent sign-in failure mode if the backend's user-provisioning call ever 500s. All fixed and re-verified. Backend: 69/69 tests, `pip-audit` clean. Frontend: `tsc`/`eslint`/`build` clean, 8/8 tests. **Not yet done:** live end-to-end verification with a real GitHub OAuth App (needs the Product Owner to register one) — everything else is code-complete and reviewed.
 
 ## Phase 3: Visual & Portfolio Polish (planned, after Phase 2)
 
@@ -89,4 +91,6 @@ No auto-starring, auto-forking, auto-following, or any other artificial engageme
 | 2026-07-20 | Gate 2 approved for backend sub-scope (GATE-0001) |
 | 2026-07-21 | Frontend built (20 tasks), reviewed, one backend cascade-delete bug found + fixed, one dependency-CVE gap found + fixed |
 | 2026-07-21 | Gate 2 approved for frontend sub-scope (GATE-0002) |
+| 2026-07-21/22 | Multi-tenant SaaS foundation designed and built (18 tasks: 11 backend, 7 frontend), whole-backend review + final whole-branch review, both clean after fix rounds |
+| TBD | Live E2E OAuth verification (needs a real GitHub OAuth App) + Gate 2 for the multi-tenant sub-scope |
 | TBD | VPS + Vercel deployment |

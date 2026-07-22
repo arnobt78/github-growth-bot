@@ -8,21 +8,23 @@
 
 **Backend sub-scope (REQ-0000–REQ-0009):** Stage 5 (Acceptance) complete — Gate 2 approved (GATE-0001, 2026-07-20). Deployment (RISK-0005/0006 pre-deploy actions, Gate 2's deployment condition per POL-0006) still open, separate from this acceptance.
 **Frontend sub-scope (REQ-0010–REQ-0014):** Stage 5 (Acceptance) complete — built (20 tasks, subagent-driven), final whole-branch review clean, escalated backend cascade-delete bug found and fixed, post-plan deep audit found and closed one dependency-CVE gap (RISK-0013), Gate 2 approved (GATE-0002, 2026-07-21). Deployment (Vercel) itself still open, separate from this acceptance, per POL-0006.
+**Multi-tenant SaaS sub-scope (REQ-0015–REQ-0019):** Stage 4 (Verification) complete — built (18 tasks, subagent-driven: 11 backend + 7 frontend), whole-backend review clean after 1 fix round, final whole-branch review clean after 1 fix round. Stage 5 (Acceptance/Gate 2) **not yet formally logged** — code-complete and reviewed, but live end-to-end verification with a real GitHub OAuth App hasn't run yet (needs the Product Owner to register one; see Open Items below).
 
 ## Open Items Requiring Attention
 
 1. ~~INT-0001 (CHECKPOINTS.md) — PENDING.~~ **CLOSED 2026-07-20 — Approved.** See `APPROVALS.md` GATE-0001. Backend sub-scope of C1 formally accepted.
 2. ~~INT-0002 (CHECKPOINTS.md) — PENDING.~~ **CLOSED 2026-07-21 — Approved.** See `APPROVALS.md` GATE-0002. Frontend sub-scope of C1 formally accepted.
 3. **Deployment not executed (either surface).** Backend: RISK-0005 (CORS env var) and RISK-0006 (manual Alembic migration step) are open pre-deploy actions. Frontend: Vercel deploy itself hasn't run. Both need their own Gate 2 evidence per POL-0006 before any Coolify/Vercel release action.
-4. **Remote configured and current.** `https://github.com/arnobt78/github-growth-bot`, branch `main`. Local commits are pushed through the frontend build + CVE fix as of this session (see Session Log below for exact SHA).
+4. **Remote configured and current.** `https://github.com/arnobt78/github-growth-bot`, branch `main`. Local commits through the multi-tenant SaaS build are committed but **not yet pushed** as of this session (see Session Log below).
+5. **Multi-tenant SaaS live E2E verification not yet run.** Needs: a real GitHub OAuth App registered by the Product Owner (client id/secret, callback URL `http://localhost:3000/api/auth/callback/github` for dev), both servers running, a real browser sign-in. This is the one remaining open item before Gate 2 can be requested for REQ-0015–REQ-0019 — everything else (code, tests, reviews) is done. Not something the controller can complete unilaterally (creating an OAuth App is the Product Owner's own GitHub account action).
 
 ## File Integrity
 
-Git-tracked, working tree clean as of last check (verify with `git status` at next session start per Directive 8/`agile-v-compliance` File Integrity rule).
+Git-tracked; multi-tenant SaaS build commits are present locally but not yet pushed as of this session's end (verify with `git status`/`git log origin/main..HEAD` at next session start per Directive 8/`agile-v-compliance` File Integrity rule).
 
 ## Next Action
 
-Both C1 sub-scopes (backend, frontend) are Gate 2-accepted. Remaining work is deployment-only: resolve RISK-0005/RISK-0006 and execute the VPS deploy (backend), then the Vercel deploy (frontend) — each needs its own Gate 2 evidence per POL-0006 before the deploy skill/agent runs.
+The multi-tenant SaaS sub-scope needs the Product Owner to register a real GitHub OAuth App and complete a live sign-in verification (see Open Item 5) before Gate 2 can be requested for REQ-0015–REQ-0019. Once that's done (or if the Product Owner chooses to accept the sub-scope on code-review evidence alone, same as how backend/frontend Gate 2s were granted), push the pending commits and log the Gate 2 decision. Deployment itself (VPS + Vercel) remains a separate, later action per POL-0006 regardless.
 
 ## Session Log — 2026-07-20 (continued)
 
@@ -53,3 +55,19 @@ Product Owner then explicitly authorized pushing to GitHub pending clean review 
 Pushed to `https://github.com/arnobt78/github-growth-bot` at `main`: `3081105..f6f42ee` (29 commits — full frontend build, escalated backend fix, final-review fix, CVE fix, this governance update).
 
 **Resume point for next session:** read this file first. Both C1 sub-scopes are Gate 2-accepted and pushed; remaining work is deployment only (see Next Action above).
+
+## Session Log — 2026-07-21/22
+
+Product Owner asked to keep extending the project toward a portfolio-showcase SaaS. Brainstormed (`superpowers:brainstorming`) the multi-tenant SaaS pivot: GitHub OAuth login, per-user data isolation, defense-in-depth authorization — decomposed as its own sub-project (visual polish and the deferred feature phases explicitly deferred until this foundation lands, per the design's own decomposition). Design spec written and approved (`docs/superpowers/specs/2026-07-21-multi-tenant-saas-design.md`), including a review of `docs/PROJECT_IDEA.md`'s 12 general architecture concepts against this project's actual scale (6 applied — Caching, Message Queue, Pub-Sub, API Gateway, Circuit Breaker, Rate Limiting; 6 deliberately deferred as premature at personal-SaaS scale, each with a stated revisit trigger — see `docs/PROJECT_PLAN.md` Phase 2's table).
+
+18-task implementation plan written and executed via `superpowers:subagent-driven-development`, fresh implementer + reviewer per task, work directly on `main`:
+
+**Backend (Tasks 1-11):** `User` model + two-phase (nullable→backfill→not-null) migration, Fernet token encryption, custom HMAC-signed internal auth token, `require_user` dependency, per-user scoping across repos/insights/recommendations/runs, per-user SSE (`EventBroadcaster`), `GitHubClient` circuit breaker (`GitHubAuthError`) + benchmark-search TTL cache, per-user pipeline execution + `BackgroundTasks`-based async run trigger, `slowapi` rate limiting. A whole-backend review (after Task 10) found 1 Medium (the daily scheduler had no exception isolation around per-repo token decryption — one corrupted token could abort every tenant's nightly run) + 3 Minor issues; all fixed in one round and re-verified (RISK-0016).
+
+**Frontend (Tasks 12-17):** Auth.js (NextAuth) v5, GitHub OAuth (`read:user public_repo` scope only), JWT session. `proxy.ts` (this Next.js version's rename of `middleware.ts` — confirmed via the bundled docs, not assumed from training data) protects every page. `lib/backend-client.ts` centralizes auth-awareness so all 13 pre-existing Route Handlers and every SSR `page.tsx` needed zero changes. Sign-in page, nav-sidebar avatar/sign-out, per-user SSE auth on the frontend side. Along the way: found and fixed a real bug in the plan's own reference code (`next-auth`'s `authorized` callback defaults to allow-all unless explicitly configured, silently defeating `proxy.ts`'s redirect — caught via live dev-server testing, not just static review); found `lucide-react`'s installed version removed the `Github` icon entirely (replaced with a local inline-SVG substitute); found and fixed 2 real, pre-existing-since-original-scaffold dependency vulnerabilities never previously caught (`sharp` HIGH-severity libvips CVEs, fixed via override; `@hono/node-server` moderate, accepted — RISK-0014/0015).
+
+**Final whole-branch review** (all 18 tasks, opus): 0 Critical/Important, 2 Medium (undocumented shared-secret requirements between backend/frontend `.env` files; `auth.ts`'s sign-in callback didn't check the user-upsert call's response, so a misconfigured deploy would silently create no `User` row) + 2 Minor + 1 nit — all fixed in one round (RISK-0017). Backend: 69/69 tests, `pip-audit` clean. Frontend: `tsc`/`eslint`/`build` clean, 8/8 tests.
+
+Governance updated: REQ-0015–REQ-0019 added to `REQUIREMENTS.md` (all `verified [C1]` except the live-OAuth piece of REQ-0015), RISK-0014–0017 logged, `docs/PROJECT_PLAN.md` Phase 2 marked done.
+
+**Resume point for next session:** read this file first. The multi-tenant SaaS sub-scope is code-complete and reviewed clean but **not yet pushed to origin** and **not yet Gate-2-accepted** — next step is either (a) the Product Owner registers a real GitHub OAuth App and does a live sign-in verification, or (b) the Product Owner accepts the sub-scope on review evidence alone (matching how backend/frontend Gate 2s were granted) and authorizes pushing now, deferring live verification. No open `CHECKPOINTS.md` interrupts as of this log entry.

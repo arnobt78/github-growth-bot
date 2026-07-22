@@ -57,10 +57,31 @@ Status tags per `agile-v-lifecycle`: `approved [C1]` (accepted, not yet built), 
 **Status:** verified [C1] — post-plan audit (2026-07-21) confirmed zero orphaned files across `components/`, `hooks/`, `lib/`, `providers/`; `benchmark-table.tsx`/`referrers-table.tsx`/`popular-paths-table.tsx` reviewed for redundancy and found to be appropriately-scoped domain components already built on shared primitives, not duplication. Primary artifacts: `frontend/lib/` (`api.ts`, `api-types.ts`, `backend-client.ts`, `fetch-json.ts`, `query-keys.ts`, `route-handler.ts`, `utils.ts`), `frontend/hooks/`, `frontend/providers/`, `frontend/types/api.d.ts` (generated from backend OpenAPI schema), `frontend/components/ui/`, `frontend/components/safe-image.tsx`. Dark/light legibility spot-checked across all 5 pages in Task 20's manual pass.
 
 **REQ-0013 — API-key isolation from the browser.** Browser never holds the backend's static API key; Next.js Route Handlers attach it server-side and proxy all backend calls.
-**Status:** verified [C1]. Primary artifacts: `frontend/lib/backend-client.ts` (server-only, attaches `BACKEND_API_KEY`), `frontend/lib/route-handler.ts` (`proxyRoute` wrapper), `frontend/app/api/**/route.ts`. **Open item carried forward:** Product Owner flagged this as the chosen default over full auth (Clerk/NextAuth) or Vercel password protection — revisit if the dashboard's threat model changes (see RISK_REGISTER RISK-0004).
+**Status:** verified [C1]. Primary artifacts: `frontend/lib/backend-client.ts` (server-only, attaches `BACKEND_API_KEY`), `frontend/lib/route-handler.ts` (`proxyRoute` wrapper), `frontend/app/api/**/route.ts`. **Open item resolved:** the "revisit if the dashboard's threat model changes" note is now acted on — REQ-0015–REQ-0019 (below) add real per-user GitHub OAuth on top of this static-key layer, since the threat model changed from "single personal dashboard" to "multi-tenant SaaS." The static API key remains one layer of the resulting defense-in-depth chain, not replaced by it.
 
 **REQ-0014 — Vercel deployment with production guardrails.** Bot protection + AI-bot blocking ON, security headers in `next.config.ts` mirrored in `vercel.json`, `/_next/static/` immutable cache, single-source `robots.ts` disallowing all crawling (`disallow: "/"` — personal tool, no SEO value), per `docs/VERCEL_PRODUCTION_GUARDRAILS.md`.
 **Status:** implemented [C1] (guardrail configuration only — actual Vercel deployment/production Gate 2 still pending, see STATE.md and the Task 20 post-plan note below). Primary artifacts: `frontend/next.config.ts`, `frontend/vercel.json`, `frontend/app/robots.ts`.
+
+---
+
+## Multi-Tenant SaaS Foundation Requirements (C1, Phase 2 — Implemented)
+
+Source of truth: `docs/superpowers/specs/2026-07-21-multi-tenant-saas-design.md`. This turns the app from single-tenant (one shared static API key, one global repo list) into a real multi-tenant SaaS — anyone signs in with their own GitHub account and tracks their own repos, fully isolated from every other user's data.
+
+**REQ-0015 — GitHub OAuth authentication, public-repo scope only.** Auth.js (NextAuth) v5, GitHub provider, `read:user public_repo` scope (no `repo` — no private-repo access in this phase), JWT session strategy (no database adapter — Next.js still never touches Postgres directly). `proxy.ts` (this Next.js version's renamed `middleware.ts`) protects every page, redirecting unauthenticated visitors to a dedicated `/sign-in` page.
+**Status:** verified [C1]. Primary artifacts: `frontend/auth.ts`, `frontend/proxy.ts`, `frontend/app/api/auth/[...nextauth]/route.ts`, `frontend/app/sign-in/page.tsx`, `frontend/types/next-auth.d.ts`. Live end-to-end sign-in verification (real GitHub OAuth App) is a separate open item — see STATE.md.
+
+**REQ-0016 — Per-user data isolation on every table.** New `User` table (`github_id`, encrypted OAuth token, `plan`/`max_tracked_repos` for future billing readiness); every existing table (`Repo`, `Snapshot`, `BenchmarkRepo`, `Referrer`, `PopularPath`, `Recommendation`, `PipelineRun`, `StageRun`) gains a `user_id` FK. Fetching another user's resource by id returns 404, never 403 (no existence leak). `LLMUsage` (shared app-wide LLM budget) and `StageRun.pipeline_run_id`'s FK (no cascade, a prior deliberate decision) are the two intentional exceptions to "every table gets scoped."
+**Status:** verified [C1]. Primary artifacts: `backend/app/models.py`, `backend/alembic/versions/9bb84cb18218_*.py` + `2d5539f16118_*.py` (two-phase nullable→backfill→not-null migration), `backend/scripts/backfill_owner_user.py`.
+
+**REQ-0017 — Defense-in-depth request authorization.** Every authenticated request: Auth.js session (frontend) → short-lived (60s) HMAC-signed internal token (`X-Internal-User-Token`, minted server-side from the verified session, never by the browser) → existing `require_api_key` (unchanged) → new `require_user` (verifies the token, loads the `User`) → every query filtered by that `user_id`. GitHub OAuth tokens encrypted at rest (Fernet), never logged, never returned by any API response.
+**Status:** verified [C1]. Primary artifacts: `backend/app/internal_auth.py`, `backend/app/token_crypto.py`, `backend/app/deps.py::require_user`, `backend/app/api/users.py`, `frontend/lib/internal-auth.ts`, `frontend/lib/backend-client.ts` (auto-attaches the token to every existing `api.ts` call — zero changes needed to any of the 13 pre-existing Route Handlers or SSR `page.tsx` call sites).
+
+**REQ-0018 — Per-user pipeline execution.** Each pipeline run authenticates to GitHub as the repo's owning user (own OAuth token, own 5,000/hr rate-limit budget instead of one shared budget). A user's expired/revoked token stops only that user's remaining repos for the rest of the run (circuit breaker via `GitHubAuthError`/`ctx.errors`, without touching the protected `PipelineRunner`/`Stage` exception-isolation contract). Manual run triggers (`POST /runs`) return immediately (202) via FastAPI `BackgroundTasks` instead of blocking the request on the actual run. SSE (`/events`) delivery is scoped per-user — a user's live-update stream only ever receives their own events.
+**Status:** verified [C1]. Primary artifacts: `backend/app/pipeline/jobs.py`, `backend/app/github_client.py` (`GitHubAuthError`, benchmark-search TTL cache), `backend/app/api/runs.py`, `backend/app/events.py`, `backend/app/api/events.py`, `frontend/app/api/events/route.ts`, `frontend/hooks/use-live-events.ts`.
+
+**REQ-0019 — Rate limiting on state-mutating endpoints.** `slowapi`, keyed by the verified `github_id` when available (falls back to remote IP) — never by the internal token itself, which rotates every request. Applied to `POST /repos`, `DELETE /repos/{id}`, `POST /runs`.
+**Status:** verified [C1]. Primary artifacts: `backend/app/rate_limit.py`, `backend/app/api/repos.py`, `backend/app/api/runs.py`.
 
 ---
 
@@ -87,5 +108,10 @@ Per the approved design spec, these feature groups from the user's original requ
 | REQ-0012 | Frontend | verified [C1] | frontend/lib/*, frontend/hooks/*, frontend/providers/*, frontend/types/api.d.ts, frontend/components/ui/* |
 | REQ-0013 | Frontend | verified [C1] | frontend/lib/backend-client.ts, frontend/lib/route-handler.ts, frontend/app/api/**/route.ts |
 | REQ-0014 | Frontend | implemented [C1] | frontend/next.config.ts, frontend/vercel.json, frontend/app/robots.ts (Vercel deploy pending) |
+| REQ-0015 | Multi-tenant | verified [C1] | frontend/auth.ts, frontend/proxy.ts, frontend/app/sign-in/* (live OAuth E2E pending) |
+| REQ-0016 | Multi-tenant | verified [C1] | backend/app/models.py, alembic/versions/{9bb84cb18218,2d5539f16118}, scripts/backfill_owner_user.py |
+| REQ-0017 | Multi-tenant | verified [C1] | backend/app/{internal_auth,token_crypto,deps}.py, frontend/lib/{internal-auth,backend-client}.ts |
+| REQ-0018 | Multi-tenant | verified [C1] | backend/app/pipeline/jobs.py, backend/app/{github_client,events}.py, backend/app/api/{runs,events}.py |
+| REQ-0019 | Multi-tenant | verified [C1] | backend/app/rate_limit.py, backend/app/api/{repos,runs}.py |
 
 **Frontend sub-scope Gate 2:** Approved (`GATE-0002`, 2026-07-21) — REQ-0010–REQ-0013 verified; REQ-0014's guardrail *code* is verified but actual Vercel deployment remains a separate, still-open action gated by POL-0006.
