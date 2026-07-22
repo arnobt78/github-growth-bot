@@ -108,7 +108,7 @@ Per the approved design spec, these feature groups from the user's original requ
 | REQ-0012 | Frontend | verified [C1] | frontend/lib/*, frontend/hooks/*, frontend/providers/*, frontend/types/api.d.ts, frontend/components/ui/* |
 | REQ-0013 | Frontend | verified [C1] | frontend/lib/backend-client.ts, frontend/lib/route-handler.ts, frontend/app/api/**/route.ts |
 | REQ-0014 | Frontend | implemented [C1] | frontend/next.config.ts, frontend/vercel.json, frontend/app/robots.ts (Vercel deploy pending) |
-| REQ-0015 | Multi-tenant | verified [C1] | frontend/auth.ts, frontend/proxy.ts, frontend/app/sign-in/* (live OAuth E2E pending) |
+| REQ-0015 | Multi-tenant | verified [C1] | frontend/auth.ts, frontend/proxy.ts, frontend/app/sign-in/* (live OAuth E2E confirmed 2026-07-22) |
 | REQ-0016 | Multi-tenant | verified [C1] | backend/app/models.py, alembic/versions/{9bb84cb18218,2d5539f16118}, scripts/backfill_owner_user.py |
 | REQ-0017 | Multi-tenant | verified [C1] | backend/app/{internal_auth,token_crypto,deps}.py, frontend/lib/{internal-auth,backend-client}.ts |
 | REQ-0018 | Multi-tenant | verified [C1] | backend/app/pipeline/jobs.py, backend/app/{github_client,events}.py, backend/app/api/{runs,events}.py |

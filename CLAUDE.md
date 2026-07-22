@@ -23,12 +23,14 @@ A personal GitHub account analytics/growth tool. Full context: [`README.md`](REA
 ## Architecture conventions to follow
 
 **Backend (`backend/`, Python/FastAPI):**
+
 - Pipeline stages implement `class Stage: name: str; def run(self, ctx: PipelineContext) -> PipelineContext`. This contract is load-bearing — `PipelineRunner` isolates each stage's exceptions per-stage; breaking the interface breaks that resilience model.
 - Any code sharing a DB session with `PipelineRunner` must not assume the session is clean after an exception — see `.agile-v/CAPA_LOG.md` CAPA-0001 for why (`self.db.rollback()` is required in the runner's exception handler; don't remove it).
 - `LLMRouter`'s provider order and Groq model allowlist (`app/llm_router.py`) are policy-locked — changing them needs a Change Request (`.agile-v/CHANGE_LOG.md`), not a silent edit.
 - Tests live in `backend/tests/`, one file per module being tested, TDD style (failing test → implementation → passing test). Full suite: `.venv/bin/python -m pytest -v`. Should stay at 100% pass with pristine output (no stray warnings).
 
 **Frontend (`frontend/`, when it exists — Next.js App Router, TypeScript):**
+
 - SSR data-fetching goes directly in `page.tsx` (Server Components); only genuinely interactive code goes in `use client` components.
 - No `loading.tsx` files. Page shell (headers, labels, icons, buttons, card frames) renders instantly; only data-bearing regions show inline skeletons matching the real content's dimensions.
 - Independent server prefetches run in parallel (`Promise.all`), never sequential `await`s.
@@ -38,13 +40,14 @@ A personal GitHub account analytics/growth tool. Full context: [`README.md`](REA
 - CRUD mutations use TanStack Query + SSE-driven cache invalidation so every open tab updates instantly without a page refresh.
 
 **Deployment:**
+
 - Backend → Coolify app on the existing Hetzner VPS, subdomain of `arnobmahmud.com`, Postgres as a separate Coolify-managed service. Follow `docs/DOCKER_VPS_BACKEND_PLAYBOOK.md` / `docs/SUBDOMAIN_ARNOBMAHMUD_SETUP.md` exactly — these are the user's own established, battle-tested conventions from other projects, don't reinvent them.
 - Frontend → Vercel, guardrails per `docs/VERCEL_PRODUCTION_GUARDRAILS.md`.
 - Never deploy without Human Gate 2 approval logged in `.agile-v/APPROVALS.md` (POL-0006).
 
 ## Process conventions
 
-- No unrequested summary/changelog `.md` files. Documentation happens in code comments (explain *why*, not *what*) and in the explicitly-requested docs listed in `README.md`.
+- No unrequested summary/changelog `.md` files. Documentation happens in code comments (explain _why_, not _what_) and in the explicitly-requested docs listed in `README.md`.
 - Don't create new abstractions, backwards-compat shims, or speculative flexibility beyond what's asked — YAGNI throughout.
 - Dependencies stay current and vulnerability-free before any milestone is called done.
 - When implementing multi-step work, prefer the pattern already used for the backend: `superpowers:brainstorming` → design spec → `superpowers:writing-plans` → implementation plan → `superpowers:subagent-driven-development` (fresh implementer + reviewer subagent per task, final whole-branch review at the end).

@@ -10,7 +10,7 @@ This project is governed by [Agile-V](.agile-v/PLAYBOOK.md) for requirement trac
 
 ## Architecture
 
-```
+```bash
 GitHub API ──▶ Extractor ──▶ Preprocessor ──▶ Analyzer ──▶ Optimizer ──▶ Synthesizer ──▶ Validator ──▶ Assembler ──▶ Postgres
                                                                               │
                                                               Groq → Gemini → OpenRouter → HF → Cloudflare → Vercel AI Gateway
