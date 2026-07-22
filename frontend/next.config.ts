@@ -13,13 +13,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [{ protocol: "https", hostname: "avatars.githubusercontent.com", pathname: "/**" }],
   },
   async headers() {
-    return [
-      { source: "/(.*)", headers: securityHeaders },
-      {
-        source: "/_next/static/(.*)",
-        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
-      },
-    ];
+    // Static-asset Cache-Control is set at the Vercel edge (vercel.json) instead of
+    // here — overriding it via next.config.ts's headers() triggers a Next.js build
+    // warning ("can break Next.js development behavior") for no benefit in prod.
+    return [{ source: "/(.*)", headers: securityHeaders }];
   },
 };
 

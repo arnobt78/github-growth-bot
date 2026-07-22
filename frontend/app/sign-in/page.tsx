@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import { GithubIcon } from "@/components/icons/github-icon";
 import { SignInButton } from "@/components/sign-in/sign-in-button";
 
+export const dynamic = "force-dynamic";
+
 export default async function SignInPage() {
   const session = await auth();
   if (session?.user) {

@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,7 +21,26 @@ from app.pipeline.jobs import run_pipeline_for_all_repos
 
 settings = get_settings()
 
-app = FastAPI(title="GitHub Growth Bot API")
+scheduler = BackgroundScheduler()
+
+
+def _scheduled_pipeline_run() -> None:
+    db = SessionLocal()
+    try:
+        run_pipeline_for_all_repos(db)
+    finally:
+        db.close()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    scheduler.add_job(_scheduled_pipeline_run, "interval", hours=24, id="daily_pipeline_run")
+    scheduler.start()
+    yield
+    scheduler.shutdown(wait=False)
+
+
+app = FastAPI(title="GitHub Growth Bot API", lifespan=lifespan)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -37,27 +59,6 @@ app.include_router(runs_router)
 app.include_router(providers_router)
 app.include_router(users_router)
 app.include_router(events_router)
-
-scheduler = BackgroundScheduler()
-
-
-def _scheduled_pipeline_run() -> None:
-    db = SessionLocal()
-    try:
-        run_pipeline_for_all_repos(db)
-    finally:
-        db.close()
-
-
-@app.on_event("startup")
-def start_scheduler() -> None:
-    scheduler.add_job(_scheduled_pipeline_run, "interval", hours=24, id="daily_pipeline_run")
-    scheduler.start()
-
-
-@app.on_event("shutdown")
-def stop_scheduler() -> None:
-    scheduler.shutdown(wait=False)
 
 
 @app.get("/api/health")
