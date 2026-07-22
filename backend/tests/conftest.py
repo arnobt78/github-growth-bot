@@ -7,7 +7,6 @@ _test_db_path = os.path.join(_test_db_dir, "test.db")
 
 os.environ.setdefault("DATABASE_URL", f"sqlite:///{_test_db_path}")
 os.environ.setdefault("API_KEY", "test-key")
-os.environ.setdefault("GITHUB_TOKEN", "test-token")
 os.environ.setdefault("TOKEN_ENCRYPTION_KEY", "zTgP1kM3vXG9wQeYrT6uI0oP2aS4dF7gH9jK1lN3mB8=")
 os.environ.setdefault("INTERNAL_AUTH_SECRET", "test-only-internal-secret-do-not-use-in-prod")
 

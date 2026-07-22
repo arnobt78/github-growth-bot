@@ -7,7 +7,6 @@ class Settings(BaseSettings):
 
     database_url: str
     api_key: str
-    github_token: str
 
     groq_api_key: str = ""
     gemini_api_key: str = ""

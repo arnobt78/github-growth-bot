@@ -34,7 +34,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const githubId = String(profile.id);
         token.githubId = githubId;
 
-        await fetch(`${BACKEND_URL}/users/upsert`, {
+        const upsertResponse = await fetch(`${BACKEND_URL}/users/upsert`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -48,6 +48,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             access_token: account.access_token,
           }),
         });
+
+        // Auth.js creates its own session/cookie regardless of this call's
+        // outcome, so a failure here would otherwise be invisible: sign-in
+        // appears to "succeed" while no backend User row exists, and the
+        // user hits a confusing, seemingly-unrelated 401 later. We don't
+        // throw/block sign-in on this (that's a separate, more aggressive
+        // decision) — but we do fail loudly and traceably right here, at the
+        // moment the misconfiguration (e.g. a bad TOKEN_ENCRYPTION_KEY) or
+        // backend error actually occurred.
+        if (!upsertResponse.ok) {
+          console.error(
+            "Failed to upsert user during sign-in:",
+            await upsertResponse.text()
+          );
+        }
       }
       return token;
     },

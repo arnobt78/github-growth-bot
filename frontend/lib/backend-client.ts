@@ -50,9 +50,13 @@ export async function backendFetch<T>(path: string, init?: RequestInit): Promise
   return handleResponse<T>(res);
 }
 
-// API-key only, no session required — exists solely for the one bootstrap
-// call (api.upsertUser) made from auth.ts's own jwt callback, before a
-// session/User row necessarily exists yet.
+// API-key only, no session required — for server-to-server calls that don't
+// have a user session yet (matching api.upsertUser's intended use case).
+// Note: auth.ts's own jwt callback does NOT use this — it inlines a separate
+// raw fetch() to avoid a circular import (this module imports auth() from
+// @/auth for backendFetch below, so auth.ts importing back into lib/ would
+// cycle). This function remains here for any future API-key-only caller
+// (e.g. an admin script) needing the same pattern.
 export async function backendFetchSystem<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
