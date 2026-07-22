@@ -11,6 +11,9 @@ export const queryKeys = {
   recommendations: {
     all: ["recommendations"] as const,
   },
+  drafts: {
+    all: ["drafts"] as const,
+  },
   runs: {
     all: ["runs"] as const,
     stages: (id: number) => ["runs", id, "stages"] as const,

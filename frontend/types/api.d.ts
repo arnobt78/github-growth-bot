@@ -159,6 +159,40 @@ export interface paths {
         patch: operations["update_recommendation_recommendations__recommendation_id__patch"];
         trace?: never;
     };
+    "/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Drafts */
+        get: operations["list_drafts_drafts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drafts/{draft_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Review Draft */
+        patch: operations["review_draft_drafts__draft_id__patch"];
+        trace?: never;
+    };
     "/runs": {
         parameters: {
             query?: never;
@@ -205,6 +239,23 @@ export interface paths {
         get: operations["provider_status_providers_status_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/upsert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upsert User */
+        post: operations["upsert_user_users_upsert_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -259,6 +310,38 @@ export interface components {
             forks: number;
             /** Topics */
             topics: string[];
+        };
+        /** DraftOut */
+        DraftOut: {
+            /** Id */
+            id: number;
+            /** Repo Id */
+            repo_id: number | null;
+            /** Kind */
+            kind: string;
+            /** Target */
+            target: string;
+            /** Content */
+            content: {
+                [key: string]: unknown;
+            };
+            /** Status */
+            status: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Reviewed At */
+            reviewed_at: string | null;
+        };
+        /** DraftPatch */
+        DraftPatch: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "approved" | "rejected";
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -407,6 +490,41 @@ export interface components {
             /** Error */
             error: string | null;
         };
+        /** TriggerRunOut */
+        TriggerRunOut: {
+            /** Status */
+            status: string;
+        };
+        /** UserOut */
+        UserOut: {
+            /** Id */
+            id: number;
+            /** Github Id */
+            github_id: string;
+            /** Username */
+            username: string;
+            /** Avatar Url */
+            avatar_url: string;
+            /** Email */
+            email: string | null;
+            /** Plan */
+            plan: string;
+            /** Max Tracked Repos */
+            max_tracked_repos: number;
+        };
+        /** UserUpsert */
+        UserUpsert: {
+            /** Github Id */
+            github_id: string;
+            /** Username */
+            username: string;
+            /** Avatar Url */
+            avatar_url: string;
+            /** Email */
+            email: string | null;
+            /** Access Token */
+            access_token: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -415,6 +533,10 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
     };
     responses: never;
@@ -430,6 +552,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path?: never;
             cookie?: never;
@@ -461,6 +584,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path?: never;
             cookie?: never;
@@ -496,6 +620,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path: {
                 repo_id: number;
@@ -529,6 +654,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path: {
                 repo_id: number;
@@ -560,6 +686,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path: {
                 repo_id: number;
@@ -593,6 +720,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path: {
                 repo_id: number;
@@ -626,6 +754,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path: {
                 repo_id: number;
@@ -659,6 +788,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path: {
                 repo_id: number;
@@ -692,6 +822,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path: {
                 repo_id: number;
@@ -725,6 +856,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path?: never;
             cookie?: never;
@@ -756,6 +888,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path: {
                 recommendation_id: number;
@@ -788,11 +921,82 @@ export interface operations {
             };
         };
     };
+    list_drafts_drafts_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+                "x-internal-user-token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_draft_drafts__draft_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+                "x-internal-user-token"?: string;
+            };
+            path: {
+                draft_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_runs_runs_get: {
         parameters: {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path?: never;
             cookie?: never;
@@ -824,6 +1028,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path?: never;
             cookie?: never;
@@ -836,7 +1041,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PipelineRunOut"][];
+                    "application/json": components["schemas"]["TriggerRunOut"];
                 };
             };
             /** @description Validation Error */
@@ -855,6 +1060,7 @@ export interface operations {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path: {
                 run_id: number;
@@ -916,11 +1122,47 @@ export interface operations {
             };
         };
     };
+    upsert_user_users_upsert_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserUpsert"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     stream_events_events_get: {
         parameters: {
             query?: never;
             header?: {
                 authorization?: string;
+                "x-internal-user-token"?: string;
             };
             path?: never;
             cookie?: never;

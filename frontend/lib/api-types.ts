@@ -7,6 +7,7 @@ export type Benchmark = components["schemas"]["BenchmarkOut"];
 export type Referrer = components["schemas"]["ReferrerOut"];
 export type PopularPath = components["schemas"]["PopularPathOut"];
 export type Recommendation = components["schemas"]["RecommendationOut"];
+export type Draft = components["schemas"]["DraftOut"];
 export type PipelineRun = components["schemas"]["PipelineRunOut"];
 export type StageRun = components["schemas"]["StageRunOut"];
 export type RepoCreate = components["schemas"]["RepoCreate"];

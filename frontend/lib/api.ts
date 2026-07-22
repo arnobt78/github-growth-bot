@@ -1,6 +1,7 @@
 import { backendFetch, backendFetchSystem } from "@/lib/backend-client";
 import type {
   Benchmark,
+  Draft,
   Insights,
   PipelineRun,
   PopularPath,
@@ -32,6 +33,13 @@ export const api = {
     backendFetch<Recommendation>(`/recommendations/${id}`, {
       method: "PATCH",
       body: JSON.stringify({ dismissed }),
+    }),
+
+  listDrafts: () => backendFetch<Draft[]>("/drafts"),
+  reviewDraft: (id: number, status: "approved" | "rejected") =>
+    backendFetch<Draft>(`/drafts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
     }),
 
   listRuns: () => backendFetch<PipelineRun[]>("/runs"),
