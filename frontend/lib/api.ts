@@ -1,4 +1,4 @@
-import { backendFetch } from "@/lib/backend-client";
+import { backendFetch, backendFetchSystem } from "@/lib/backend-client";
 import type {
   Benchmark,
   Insights,
@@ -35,8 +35,20 @@ export const api = {
     }),
 
   listRuns: () => backendFetch<PipelineRun[]>("/runs"),
-  triggerRun: () => backendFetch<PipelineRun[]>("/runs", { method: "POST" }),
+  triggerRun: () => backendFetch<{ status: string }>("/runs", { method: "POST" }),
   listRunStages: (id: number) => backendFetch<StageRun[]>(`/runs/${id}/stages`),
 
   providerStatus: () => backendFetch<ProviderStatus[]>("/providers/status"),
+
+  upsertUser: (payload: {
+    github_id: string;
+    username: string;
+    avatar_url: string;
+    email: string | null;
+    access_token: string;
+  }) =>
+    backendFetchSystem<{ id: number; github_id: string }>("/users/upsert", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
