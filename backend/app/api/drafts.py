@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -52,11 +51,7 @@ def review_draft(
     if draft is None:
         raise HTTPException(status_code=404, detail="Draft not found")
     if draft.status != "pending":
-        # Body carries the draft's current (already-reviewed) state — not just an
-        # error string — so the client can reconcile its view without a refetch.
-        return JSONResponse(
-            status_code=409, content=DraftOut.model_validate(draft).model_dump(mode="json")
-        )
+        raise HTTPException(status_code=409, detail="Draft has already been reviewed")
 
     draft.status = payload.status
     draft.reviewed_at = datetime.now(draft.created_at.tzinfo)

@@ -80,7 +80,9 @@ def test_patch_already_reviewed_draft_returns_409(client):
 
     resp = client.patch(f"/drafts/{draft_id}", json={"status": "rejected"})
     assert resp.status_code == 409
-    assert resp.json()["status"] == "approved"
+
+    list_resp = client.get("/drafts")
+    assert any(d["id"] == draft_id and d["status"] == "approved" for d in list_resp.json())
 
 
 def test_drafts_require_user_token(client_without_user_token):
