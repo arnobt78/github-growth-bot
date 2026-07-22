@@ -15,7 +15,7 @@ export function useRuns() {
 export function useTriggerRun() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => fetchJson<PipelineRun[]>("/api/runs", { method: "POST" }),
+    mutationFn: () => fetchJson<{ status: string }>("/api/runs", { method: "POST" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.runs.all });
     },
