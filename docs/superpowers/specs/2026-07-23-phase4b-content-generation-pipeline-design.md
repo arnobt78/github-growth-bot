@@ -29,10 +29,11 @@ class ContentTask:
 class ContentPipelineContext:
     repo: Repo
     raw: dict[str, Any] = field(default_factory=dict)
-    normalized: dict[str, Any] = field(default_factory=dict)
     tasks: list[ContentTask] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 ```
+
+(No `normalized` field — unlike the analytics pipeline, nothing in this pipeline needs a separate normalized-metrics view; every stage reads/writes `ctx.raw` and `ctx.tasks` directly. Adding an unused field here would be exactly the kind of dead code this project's standing instructions ask to avoid.)
 
 ### Stages (`backend/app/pipeline/content/*.py`), same 7-stage order as Phase 1
 
@@ -74,7 +75,7 @@ def build_content_stages(db: Session, gh_client: GitHubClient, llm_router: LLMRo
 def run_content_pipeline_for_all_repos(db: Session, user_id: int | None = None) -> None: ...
 ```
 
-Same per-user circuit breaker pattern as `run_pipeline_for_all_repos` (skip `user_id`s with `needs_reauth`/decrypt failures), same `PipelineRunner` reuse (constructs `PipelineRun` with `pipeline_kind="content"`), same SSE publish-per-user-processed pattern at the end (event `drafts_generated`, payload `{"repo_id": ...}`).
+Same per-user circuit breaker pattern as `run_pipeline_for_all_repos` (skip `user_id`s with `needs_reauth`/decrypt failures), same `PipelineRunner` reuse via its new `context_factory`/`pipeline_kind` params (constructs `PipelineRun` with `pipeline_kind="content"`), same SSE publish-per-user-processed pattern at the end (event `drafts_generated`, empty payload `{}` — matches `run_completed`'s existing per-user-not-per-repo shape, since a user's drafts across all their repos are invalidated by one query-key refetch either way).
 
 ### New API endpoint (`backend/app/api/runs.py`, or a small addition — reuses the router)
 
