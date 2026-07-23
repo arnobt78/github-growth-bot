@@ -23,17 +23,16 @@ def test_trigger_run_requires_user_token(client_without_user_token):
 
 
 def test_list_runs_exposes_pipeline_kind(client):
-    client.post("/repos", json={"owner": "octocat", "name": "hello-world"})
-    with patch("app.pipeline.jobs.run_pipeline_for_all_repos"):
-        client.post("/runs")
-
     from app.db import SessionLocal
     from app.models import PipelineRun
+
     db = SessionLocal()
-    db.query(PipelineRun).update({"status": "ok"})
+    db.add(PipelineRun(user_id=client.test_user_id, status="ok"))
     db.commit()
     db.close()
 
     resp = client.get("/runs")
     assert resp.status_code == 200
-    assert all("pipeline_kind" in run for run in resp.json())
+    runs = resp.json()
+    assert len(runs) == 1
+    assert runs[0]["pipeline_kind"] == "analytics"
