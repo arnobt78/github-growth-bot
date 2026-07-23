@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
+import { AlertTriangle, BarChart3, CheckCircle2, ChevronDown, ChevronRight, Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,11 +13,18 @@ const STATUS_META = {
   running: { icon: Loader2, color: "text-sky-500", label: "Running" },
 } as const;
 
+const KIND_META = {
+  analytics: { icon: BarChart3, color: "text-sky-500", label: "Analytics" },
+  content: { icon: Sparkles, color: "text-fuchsia-500", label: "Content" },
+} as const;
+
 export function RunRow({ run }: { run: PipelineRun }) {
   const [expanded, setExpanded] = useState(false);
   const { data: stages, isPending } = useRunStages(run.id, expanded);
   const meta = STATUS_META[run.status as keyof typeof STATUS_META] ?? STATUS_META.running;
   const StatusIcon = meta.icon;
+  const kindMeta = KIND_META[run.pipeline_kind as keyof typeof KIND_META] ?? KIND_META.analytics;
+  const KindIcon = kindMeta.icon;
 
   return (
     <Card>
@@ -31,6 +38,10 @@ export function RunRow({ run }: { run: PipelineRun }) {
           <span className="flex items-center gap-2 text-sm font-medium">
             {expanded ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
             Run #{run.id}
+            <span className={`flex items-center gap-1 text-xs ${kindMeta.color}`}>
+              <KindIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              {kindMeta.label}
+            </span>
           </span>
           <span className={`flex items-center gap-1 text-sm ${meta.color}`}>
             <StatusIcon className="h-4 w-4" aria-hidden="true" />

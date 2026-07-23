@@ -1,19 +1,21 @@
 "use client";
 
-import { CheckCircle2, Inbox, X } from "lucide-react";
+import { CheckCircle2, Inbox, Sparkles, X } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { useDrafts, useReviewDraft } from "@/hooks/use-drafts";
+import { DraftContent } from "@/components/drafts/draft-content";
+import { useDrafts, useReviewDraft, useTriggerContentRun } from "@/hooks/use-drafts";
 import { useRepos } from "@/hooks/use-repos";
 
 export function DraftsClient() {
   const { data: drafts } = useDrafts();
   const { data: repos } = useRepos();
   const review = useReviewDraft();
+  const triggerContentRun = useTriggerContentRun();
 
   const repoNameById = useMemo(() => {
     const map = new Map<number, string>();
@@ -25,24 +27,40 @@ export function DraftsClient() {
 
   return (
     <div className="space-y-6">
-      <SectionHeading icon={Inbox} title="Drafts" subtitle="Review before anything goes out" iconColor="text-emerald-500" />
+      <div className="flex items-center justify-between">
+        <SectionHeading icon={Inbox} title="Drafts" subtitle="Review before anything goes out" iconColor="text-emerald-500" />
+        <Button
+          onClick={() =>
+            triggerContentRun.mutate(undefined, {
+              onSuccess: () => toast.success("Content generation started"),
+              onError: () => toast.error("Could not start content generation"),
+            })
+          }
+          disabled={triggerContentRun.isPending}
+        >
+          <Sparkles className="h-4 w-4" aria-hidden="true" />
+          {triggerContentRun.isPending ? "Generating..." : "Generate drafts"}
+        </Button>
+      </div>
 
       {pending && pending.length === 0 ? (
-        <EmptyState icon={Inbox} title="No drafts yet" description="They'll show up here once an automation feature generates one." />
+        <EmptyState icon={Inbox} title="No drafts yet" description="Click 'Generate drafts' or wait for the daily schedule." />
       ) : (
         <div className="space-y-2">
           {pending?.map((draft) => (
             <Card key={draft.id}>
               <CardContent className="flex items-start justify-between gap-4 py-4">
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-muted-foreground">
                     {draft.repo_id !== null ? repoNameById.get(draft.repo_id) ?? `repo #${draft.repo_id}` : "Account-level"}
                     {" · "}
                     {draft.kind}
                   </p>
-                  <p className="text-sm text-muted-foreground">{JSON.stringify(draft.content)}</p>
+                  <div className="mt-1">
+                    <DraftContent kind={draft.kind} content={draft.content} />
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex shrink-0 items-center gap-1">
                   <Button
                     variant="ghost"
                     size="icon"
