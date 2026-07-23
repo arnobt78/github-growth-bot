@@ -46,6 +46,7 @@ export const api = {
   listRuns: () => backendFetch<PipelineRun[]>("/runs"),
   triggerRun: () => backendFetch<{ status: string }>("/runs", { method: "POST" }),
   listRunStages: (id: number) => backendFetch<StageRun[]>(`/runs/${id}/stages`),
+  triggerContentRun: () => backendFetch<{ status: string }>("/runs/content", { method: "POST" }),
 
   providerStatus: () => backendFetch<ProviderStatus[]>("/providers/status"),
 

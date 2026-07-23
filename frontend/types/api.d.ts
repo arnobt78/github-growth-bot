@@ -211,6 +211,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/runs/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trigger Content Run */
+        post: operations["trigger_content_run_runs_content_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/runs/{run_id}/stages": {
         parameters: {
             query?: never;
@@ -363,6 +380,8 @@ export interface components {
             id: number;
             /** Status */
             status: string;
+            /** Pipeline Kind */
+            pipeline_kind: string;
             /**
              * Started At
              * Format: date-time
@@ -1031,6 +1050,38 @@ export interface operations {
         };
     };
     trigger_run_runs_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+                "x-internal-user-token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriggerRunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_content_run_runs_content_post: {
         parameters: {
             query?: never;
             header?: {
