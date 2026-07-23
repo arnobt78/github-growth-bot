@@ -57,7 +57,8 @@ Every endpoint requires `Authorization: Bearer <API_KEY>` except the health chec
 | `GET /repos/{id}/insights` | Latest stars/forks + open recommendation count |
 | `GET /repos/{id}/benchmarks` | How you compare to similar repos |
 | `GET /recommendations` / `PATCH /recommendations/{id}` | Cross-repo recommendation feed, dismiss individual ones |
-| `GET/POST /runs` | Pipeline run history, manually trigger a run (202, runs in the background) |
+| `GET/POST /runs` | Analytics pipeline run history, manually trigger a run (202, runs in the background) |
+| `POST /runs/content` | Manually trigger the content generation pipeline (202, runs in the background) — same shape as `POST /runs`, distinguished by `pipeline_kind` |
 | `GET /providers/status` | Which LLM providers are near their daily rate limit |
 | `GET /drafts` / `PATCH /drafts/{id}` | Draft-and-approve inbox (Phase 4A) — anything a future automation feature generates lands here as `pending`; approve/reject is a one-way transition |
 | `POST /users/upsert` | Provisions/updates a `User` row on sign-in (called by Auth.js, not by the browser) |
@@ -73,7 +74,9 @@ The browser never holds the backend's API key: Next.js Route Handlers under `fro
 
 ## Draft-and-approve automation (Phase 4, in progress)
 
-Everything beyond analytics (README suggestions, release notes, social posts, issue replies — see `PROJECT_PLAN.md` Phase 4) writes a `Draft` row instead of acting directly. Nothing external — no post, no reply, no PR — happens until a human approves it via the Drafts inbox. Phase 4A shipped the plumbing only (the `Draft` model, API, and inbox UI); the inbox is expected to be empty until a Phase 4B+ feature actually produces content.
+Everything beyond analytics (README suggestions, release notes, social posts, issue replies — see `PROJECT_PLAN.md` Phase 4) writes a `Draft` row instead of acting directly. Nothing external — no post, no reply, no PR — happens until a human approves it via the Drafts inbox. Phase 4A shipped the plumbing (the `Draft` model, API, and inbox UI); Phase 4B is the first real producer.
+
+**Content generation pipeline (Phase 4B):** a second `Stage`/`PipelineRunner` pipeline, structurally identical to the analytics one but LLM-heavy end to end: `ContentExtractor` (README/topics/description/missing community-health docs) → `ContentAnalyzer`/`ContentPreprocessor`/`ContentOptimizer` (build one task per opportunity: a README rewrite, up to 3 missing-doc drafts, a topic-list refresh, an SEO description+keywords pass) → `ContentSynthesizer` (best-of-3 candidates per task, each candidate forced onto a *different* LLM provider via `LLMRouter`'s new `skip_providers` param, so a single provider's bias never wins by default) → `ContentValidator` (an LLM-as-judge call picks the best candidate, then a deterministic check cross-references any specific repo-metric claim it makes — `"N stars"`, `"N forks"`, etc. — against the real numbers; a fabricated stat fails the task, incidental numbers like versions/years don't) → `ContentAssembler` (writes one `Draft` per valid task, kind-specific `content` shape: `readme_suggestion`/`topic_suggestion` get `{current, suggested, reason}`, `missing_doc_suggestion` gets `{suggested, reason}`, `seo_suggestion` gets `{current, suggested_description, keywords, reason}`). Runs both on-demand (`POST /runs/content`) and on a second daily APScheduler job, staggered 12h from the analytics job to avoid both pipelines fighting over the same rate-limited LLM providers at once. The Drafts inbox renders each kind's real content (before/after panels, topic/keyword chips, the judge's stated reason) instead of raw JSON.
 
 ## Safety rails baked into the design
 
@@ -90,6 +93,6 @@ Everything beyond analytics (README suggestions, release notes, social posts, is
 - What went wrong during build and how it got caught: `../.agile-v/CAPA_LOG.md`
 - Known accepted risks: `../.agile-v/RISK_REGISTER.md`
 - Original design conversation: `superpowers/specs/2026-07-20-github-growth-bot-design.md`
-- Task-by-task implementation plans: `superpowers/plans/2026-07-20-github-growth-bot-backend.md`, `superpowers/plans/2026-07-20-github-growth-bot-frontend.md`, `superpowers/plans/2026-07-21-github-growth-bot-multi-tenant-saas.md`, `superpowers/plans/2026-07-22-phase4a-automation-engine-core.md`
+- Task-by-task implementation plans: `superpowers/plans/2026-07-20-github-growth-bot-backend.md`, `superpowers/plans/2026-07-20-github-growth-bot-frontend.md`, `superpowers/plans/2026-07-21-github-growth-bot-multi-tenant-saas.md`, `superpowers/plans/2026-07-22-phase4a-automation-engine-core.md`, `superpowers/plans/2026-07-23-phase4b-content-generation-pipeline.md`
 - Multi-tenant SaaS design spec: `superpowers/specs/2026-07-21-multi-tenant-saas-design.md`
-- Phase 4 roadmap + Phase 4A design spec: `../docs/PROJECT_PLAN.md`, `superpowers/specs/2026-07-22-phase4a-automation-engine-core-design.md`
+- Phase 4 roadmap + design specs: `../docs/PROJECT_PLAN.md`, `superpowers/specs/2026-07-22-phase4a-automation-engine-core-design.md`, `superpowers/specs/2026-07-23-phase4b-content-generation-pipeline-design.md`

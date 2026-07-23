@@ -68,4 +68,20 @@ Append-only. `GATE-XXXX` with Gate type, Cycle, Scope, Decision (Approved/Condit
 - **Evidence Reference:** commit `da64454` (documentation currency update, HEAD of accepted work); pushed to `https://github.com/arnobt78/github-growth-bot` at `main`
 - **Closes:** Phase 4A Stage 5 acceptance (no `CHECKPOINTS.md` interrupt was opened for this sub-scope — same as multi-tenant SaaS, approval requested directly via Evidence Summary rather than a durable interrupt)
 
-Next entry will be `GATE-0005`.
+---
+
+## GATE-0005
+
+- **Gate type:** Gate 2 (Acceptance)
+- **Cycle:** C1
+- **Scope:** Phase 4B content generation pipeline (REQ-0021) — 14-task subagent-driven build (`docs/superpowers/plans/2026-07-23-phase4b-content-generation-pipeline.md`), 4 task-scoped fix rounds, final whole-branch review (opus) that found and fixed one Important production bug (RISK-0019) plus 3 Minor items. Plus a post-build independent deep audit (2 fresh subagents, backend + frontend) that found and closed 4 more real gaps (validator's nested-repo-stat blind spot; `DraftContent` not rendering `reason`/topic-seo `current`; unused `DraftKind` exhaustiveness), independently re-verified clean.
+- **Decision:** Approved
+- **Conditions:** None. (Deployment itself remains separately gated per POL-0006. Live manual browser smoke test of "Generate drafts" — real GitHub sign-in required — remains outstanding, deferred to the Product Owner same as every prior OAuth-gated verification step.)
+- **Approver:** Arnob Mahmud
+- **Role/Authority:** Project Owner / Sole Stakeholder (per config.json authority_matrix)
+- **Timestamp:** 2026-07-23
+- **Signature Method:** Explicit instruction in chat ("commite in github if all okay as flawless after code review") following a full independent deep-audit report — non-regulated context, name + timestamp is the required minimum per `agile-v-compliance`'s signature table
+- **Evidence Reference:** commit `451eb10` (post-audit fix, HEAD of accepted work); pushed to `https://github.com/arnobt78/github-growth-bot` at `main`
+- **Closes:** Phase 4B Stage 5 acceptance (no `CHECKPOINTS.md` interrupt was opened for this sub-scope — same as multi-tenant SaaS and Phase 4A, approval requested directly via Evidence Summary rather than a durable interrupt)
+
+Next entry will be `GATE-0006`.
