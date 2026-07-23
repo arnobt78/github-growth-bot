@@ -1,10 +1,13 @@
+from datetime import datetime, timezone
+
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.events import broadcaster
 from app.github_client import GitHubClient
 from app.llm_router import LLMRouter
-from app.models import Repo, User
+from app.models import Draft, Repo, User
+from app.notifications import notify_drafts_ready
 from app.pipeline.content.analyzer import ContentAnalyzer
 from app.pipeline.content.assembler import ContentAssembler
 from app.pipeline.content.extractor import ContentExtractor
@@ -29,7 +32,7 @@ def build_content_stages(db: Session, gh_client: GitHubClient, llm_router: LLMRo
     ]
 
 
-def run_content_pipeline_for_all_repos(db: Session, user_id: int | None = None) -> None:
+def run_content_pipeline_for_all_repos(db: Session, user_id: int | None = None, notify: bool = False) -> None:
     settings = get_settings()
     llm_router = LLMRouter(settings=settings, db_session=db)
 
@@ -40,6 +43,7 @@ def run_content_pipeline_for_all_repos(db: Session, user_id: int | None = None) 
 
     failed_auth_user_ids: set[int] = set()
     processed_user_ids: set[int] = set()
+    run_started_at = datetime.now(timezone.utc)
 
     for repo in repos:
         if repo.user_id in failed_auth_user_ids:
@@ -71,3 +75,13 @@ def run_content_pipeline_for_all_repos(db: Session, user_id: int | None = None) 
 
     for uid in processed_user_ids:
         broadcaster.publish("drafts_generated", {}, user_id=uid)
+
+    if notify:
+        for uid in processed_user_ids:
+            draft_count = db.query(Draft).filter(
+                Draft.user_id == uid, Draft.created_at >= run_started_at
+            ).count()
+            if draft_count > 0:
+                owner = db.get(User, uid)
+                if owner is not None:
+                    notify_drafts_ready(owner, draft_count)

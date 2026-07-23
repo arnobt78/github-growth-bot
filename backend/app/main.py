@@ -30,7 +30,7 @@ scheduler = BackgroundScheduler()
 def _scheduled_pipeline_run() -> None:
     db = SessionLocal()
     try:
-        run_pipeline_for_all_repos(db)
+        run_pipeline_for_all_repos(db, notify=True)
     finally:
         db.close()
 
@@ -38,7 +38,7 @@ def _scheduled_pipeline_run() -> None:
 def _scheduled_content_pipeline_run() -> None:
     db = SessionLocal()
     try:
-        run_content_pipeline_for_all_repos(db)
+        run_content_pipeline_for_all_repos(db, notify=True)
     finally:
         db.close()
 
