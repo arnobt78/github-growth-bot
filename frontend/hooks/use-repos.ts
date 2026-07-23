@@ -29,6 +29,11 @@ export function useDeleteRepo() {
     mutationFn: (id: number) => fetchJson<void>(`/api/repos/${id}`, { method: "DELETE" }),
     onSuccess: (_data, id) => {
       queryClient.setQueryData<Repo[]>(queryKeys.repos.all, (current) => current?.filter((r) => r.id !== id) ?? []);
+      // Backend cascades the delete (ON DELETE CASCADE) to that repo's recommendations
+      // and drafts — without this, the inbox caches keep showing rows for a repo that
+      // no longer exists.
+      queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.drafts.all });
     },
   });
 }

@@ -2,7 +2,7 @@
 from unittest.mock import MagicMock, patch
 
 from app.db import SessionLocal
-from app.models import PipelineRun, Repo, User
+from app.models import Repo, User
 from app.token_crypto import encrypt_token
 
 

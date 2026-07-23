@@ -1,7 +1,5 @@
-from datetime import date
-
 from app.db import SessionLocal
-from app.models import Recommendation, Repo, Snapshot
+from app.models import Recommendation, Repo
 
 
 def _seed_recommendation_for(user_id: int) -> tuple[int, int]:

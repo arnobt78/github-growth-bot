@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.events import broadcaster
-from app.github_client import GitHubAuthError, GitHubClient
+from app.github_client import GitHubClient
 from app.llm_router import LLMRouter
 from app.models import Repo, User
 from app.pipeline.analyzer import Analyzer

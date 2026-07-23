@@ -1,6 +1,4 @@
 # backend/tests/test_runner.py
-from unittest.mock import MagicMock
-
 from app.db import SessionLocal
 from app.models import PipelineRun, Recommendation, Repo, Snapshot, StageRun
 from app.pipeline.base import PipelineContext, Stage

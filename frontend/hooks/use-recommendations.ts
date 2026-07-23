@@ -24,6 +24,10 @@ export function useDismissRecommendation() {
       queryClient.setQueryData<Recommendation[]>(queryKeys.recommendations.all, (current) =>
         current?.map((r) => (r.id === updated.id ? updated : r)) ?? [],
       );
+      // insights.recommendation_count is derived server-side from non-dismissed
+      // recommendations (backend app/api/insights.py) — the RepoCard/settings badge
+      // would otherwise show a stale count until staleTime lapses.
+      queryClient.invalidateQueries({ queryKey: queryKeys.repos.insights(updated.repo_id) });
     },
   });
 }

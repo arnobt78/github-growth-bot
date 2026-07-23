@@ -7,8 +7,13 @@ import { queryKeys } from "@/lib/query-keys";
 
 const EVENT_QUERY_MAP: Record<string, QueryKey[]> = {
   repo_added: [queryKeys.repos.all],
-  repo_removed: [queryKeys.repos.all],
-  recommendation_updated: [queryKeys.recommendations.all],
+  // Backend cascades repo deletion to that repo's recommendations/drafts (ON DELETE
+  // CASCADE) — other open tabs need those inboxes invalidated too, not just the repo list.
+  repo_removed: [queryKeys.repos.all, queryKeys.recommendations.all, queryKeys.drafts.all],
+  // Payload only carries {id, dismissed} (no repo_id — see backend app/api/recommendations.py),
+  // so we can't target one repo's insights key; invalidate repos.all (prefix-matches
+  // ["repos", id, "insights"] too) to refresh the recommendation_count badge everywhere.
+  recommendation_updated: [queryKeys.recommendations.all, queryKeys.repos.all],
   run_completed: [queryKeys.runs.all, queryKeys.repos.all, queryKeys.recommendations.all],
   draft_updated: [queryKeys.drafts.all],
   drafts_generated: [queryKeys.drafts.all, queryKeys.runs.all],

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date, timezone, datetime
+from datetime import timezone, datetime
 
 import httpx
 from sqlalchemy import select

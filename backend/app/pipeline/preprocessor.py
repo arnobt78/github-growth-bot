@@ -1,4 +1,4 @@
-from datetime import date, timezone, datetime
+from datetime import timezone, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
