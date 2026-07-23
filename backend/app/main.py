@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
@@ -19,6 +20,7 @@ from app.api.providers import router as providers_router
 from app.api.users import router as users_router
 from app.db import SessionLocal
 from app.pipeline.jobs import run_pipeline_for_all_repos
+from app.pipeline.content_jobs import run_content_pipeline_for_all_repos
 
 settings = get_settings()
 
@@ -33,9 +35,27 @@ def _scheduled_pipeline_run() -> None:
         db.close()
 
 
+def _scheduled_content_pipeline_run() -> None:
+    db = SessionLocal()
+    try:
+        run_content_pipeline_for_all_repos(db)
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     scheduler.add_job(_scheduled_pipeline_run, "interval", hours=24, id="daily_pipeline_run")
+    # Offset 12h from the analytics job's default first-run time so the two
+    # daily jobs don't both fire at once and contend for the same LLM
+    # provider rate-limit windows.
+    scheduler.add_job(
+        _scheduled_content_pipeline_run,
+        "interval",
+        hours=24,
+        id="daily_content_pipeline_run",
+        next_run_time=datetime.now() + timedelta(hours=12),
+    )
     scheduler.start()
     yield
     scheduler.shutdown(wait=False)
