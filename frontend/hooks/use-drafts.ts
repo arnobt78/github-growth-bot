@@ -27,3 +27,16 @@ export function useReviewDraft() {
     },
   });
 }
+
+export function useTriggerContentRun() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => fetchJson<{ status: string }>("/api/runs/content", { method: "POST" }),
+    onSuccess: () => {
+      // The triggered run itself (not its eventual drafts) is visible immediately;
+      // the drafts_generated SSE event above invalidates queryKeys.drafts.all once
+      // the background pipeline actually finishes and writes rows.
+      queryClient.invalidateQueries({ queryKey: queryKeys.runs.all });
+    },
+  });
+}
