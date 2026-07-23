@@ -21,4 +21,7 @@ export const queryKeys = {
   providers: {
     status: ["providers", "status"] as const,
   },
+  users: {
+    me: ["users", "me"] as const,
+  },
 };

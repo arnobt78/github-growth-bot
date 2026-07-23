@@ -17,6 +17,7 @@ const EVENT_QUERY_MAP: Record<string, QueryKey[]> = {
   run_completed: [queryKeys.runs.all, queryKeys.repos.all, queryKeys.recommendations.all],
   draft_updated: [queryKeys.drafts.all],
   drafts_generated: [queryKeys.drafts.all, queryKeys.runs.all],
+  user_updated: [queryKeys.users.me],
 };
 
 export function useLiveEvents() {

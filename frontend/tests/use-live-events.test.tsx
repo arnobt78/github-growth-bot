@@ -94,6 +94,22 @@ describe("useLiveEvents", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.runs.all });
   });
 
+  it("invalidates the users.me query when a user_updated event arrives", () => {
+    const queryClient = new QueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Harness />
+      </QueryClientProvider>,
+    );
+
+    const source = FakeEventSource.instances[0];
+    source.emit("user_updated", {});
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.users.me });
+  });
+
   it("does not open an EventSource connection when signed out", () => {
     useSession.mockReturnValue({ status: "unauthenticated" });
     const queryClient = new QueryClient();

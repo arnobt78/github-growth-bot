@@ -55,4 +55,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
+  getMe: () => backendFetch<UserOut>("/users/me"),
+  updateMe: (payload: { notification_email: string | null }) =>
+    backendFetch<UserOut>("/users/me", { method: "PATCH", body: JSON.stringify(payload) }),
 };

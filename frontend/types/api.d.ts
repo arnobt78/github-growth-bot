@@ -279,6 +279,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Me */
+        get: operations["get_me_users_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Me */
+        patch: operations["update_me_users_me_patch"];
+        trace?: never;
+    };
     "/events": {
         parameters: {
             query?: never;
@@ -521,6 +539,11 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** UserMePatch */
+        UserMePatch: {
+            /** Notification Email */
+            notification_email: string | null;
+        };
         /** UserOut */
         UserOut: {
             /** Id */
@@ -533,6 +556,8 @@ export interface components {
             avatar_url: string;
             /** Email */
             email: string | null;
+            /** Notification Email */
+            notification_email: string | null;
             /** Plan */
             plan: string;
             /** Max Tracked Repos */
@@ -1190,6 +1215,74 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UserUpsert"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_me_users_me_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+                "x-internal-user-token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_me_users_me_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+                "x-internal-user-token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserMePatch"];
             };
         };
         responses: {
