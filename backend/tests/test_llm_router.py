@@ -82,3 +82,32 @@ def test_raises_when_all_providers_fail():
     router = LLMRouter(settings=_settings(), db_session=_db(), transport=httpx.MockTransport(handler))
     with pytest.raises(LLMRouterError):
         router.chat_completion([{"role": "user", "content": "hi"}])
+
+
+def test_skip_providers_excludes_named_providers():
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(str(request.url))
+        return httpx.Response(200, json={"choices": [{"message": {"content": "hello"}}]})
+
+    router = LLMRouter(settings=_settings(), db_session=_db(), transport=httpx.MockTransport(handler))
+    router.chat_completion([{"role": "user", "content": "hi"}], skip_providers={"groq"})
+
+    assert not any("groq.com" in c for c in calls)
+    assert any("generativelanguage" in c for c in calls)
+
+
+def test_skip_providers_none_behaves_like_default():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert "groq.com" in str(request.url)
+        return httpx.Response(200, json={"choices": [{"message": {"content": "hello"}}]})
+
+    router = LLMRouter(settings=_settings(), db_session=_db(), transport=httpx.MockTransport(handler))
+    result = router.chat_completion([{"role": "user", "content": "hi"}], skip_providers=None)
+    assert result == "hello"
+
+
+def test_available_provider_names_reflects_configured_keys():
+    router = LLMRouter(settings=_settings(), db_session=_db())
+    assert router.available_provider_names() == ["groq", "gemini"]

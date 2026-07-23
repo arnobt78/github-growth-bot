@@ -47,10 +47,13 @@ class LLMRouter:
         ]
         return [p for p in candidates if p.api_key]
 
-    def chat_completion(self, messages: list[dict[str, str]]) -> str:
+    def chat_completion(self, messages: list[dict[str, str]], skip_providers: set[str] | None = None) -> str:
         last_error: Exception | None = None
+        skip_providers = skip_providers or set()
 
         for provider in self._providers():
+            if provider.name in skip_providers:
+                continue
             if self._is_near_limit(provider.name):
                 continue
             for model in provider.models:
@@ -63,6 +66,9 @@ class LLMRouter:
                     continue
 
         raise LLMRouterError(f"All LLM providers failed: {last_error}")
+
+    def available_provider_names(self) -> list[str]:
+        return [p.name for p in self._providers()]
 
     def _call(self, provider: ProviderConfig, model: str, messages: list[dict[str, str]]) -> str:
         headers = {"Authorization": f"Bearer {provider.api_key}"}
