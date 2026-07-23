@@ -1,526 +1,583 @@
-# Project Ideas & Tips & Tricks & follow thoughts in improving development process
+# Global Engineering Playbook
 
-## 12 Architecture Concepts Every Developer Should Know
+Portable engineering standards for **Cursor / Claude Code / Codex** agents.
 
-1️⃣ Load Balancing – Spread traffic across servers to avoid crashes and handle spikes.
-2️⃣ Caching – Store data temporarily to reduce DB load and improve speed.
-3️⃣ CDN – Deliver content from the nearest location to reduce global latency.
-4️⃣ Message Queue – Use async processing to avoid failure chains between services.
-5️⃣ Publish–Subscribe – One event, multiple listeners. Keeps services loosely connected.
-6️⃣ API Gateway – Single entry point for auth, routing, logging and rate limiting.
-7️⃣ Circuit Breaker – Stop calling failing services to prevent system-wide crashes.
-8️⃣ Service Discovery – Automatically find running services in dynamic environments.
-9️⃣ Sharding – Split large databases when one server is not enough.
-🔟 Rate Limiting – Protect systems from abuse, bots and traffic floods.
-1️⃣1️⃣ Consistent Hashing – Smart data distribution with minimal reshuffling during scaling.
-1️⃣2️⃣ Auto Scaling – Automatically increase/decrease servers based on traffic.
+Drop this file into any project (typically `docs/PROJECT_IDEA.md` or `docs/ENGINEERING_STANDARDS.md`) and tell agents: **follow this playbook**.
 
-🎯 Final Thought
-Junior mindset: “Does my API work?”
-Senior mindset: “Will this system survive heavy traffic, failure and scale?”
+**Audience:** React + TypeScript frontends in either mode:
 
-## The end of the useMemo and useCallback era is officially here
+- **Next.js App Router** (SSR/RSC, optional BFF Route Handlers)
+- **Vite SPA** (fully client-rendered; frontend and backend deployed separately)
 
-If you’ve been building complex React applications for a while, you know the struggle. We’ve all spent hours hunting down unnecessary re-renders and wrapping half of our codebase in memoization hooks just to keep the UI smooth. It cluttered the code, increased cognitive load, and was incredibly easy to get wrong.
-With the React Compiler, manual memoization is finally becoming a thing of the past.
-It now analyzes your code and automatically applies these optimizations under the hood, right out of the box.
-What this actually means for frontend developers:
-✅ Cleaner code: Components are much easier to read and maintain without the hook boilerplate.
-✅ Performance by default: The UI stays fast without requiring you to manually babysit every render cycle.
-✅ Faster development: You can focus on building features and architecture instead of debugging dependency arrays.
-It’s a massive step forward for the React ecosystem.
+…with FastAPI / Node / Nest / similar backends. Detect the stack from the repo (`next.config.*` vs `vite.config.*`) and apply the matching rules. Soften or skip rules that do not apply.
 
-## Most developers accidentally make async JavaScript slower than it needs to be
+**Keyword meanings**
 
-A lot of people write async code like this:
+| Keyword | Meaning |
+|---|---|
+| MUST | Non-negotiable. Violations are bugs. |
+| SHOULD | Default. Deviate only with a documented reason. |
+| SHOULD NOT | Avoid unless there is a clear, local justification. |
+| NEVER | Forbidden — including “temporary” shortcuts. |
 
-await first request
-wait…
-await second request
-wait…
-await third request
+**Authority order**
 
-It works.
-
-But if those requests are independent, you’re wasting time.
-
-The better approach:
-
-✅ run them in parallel with Promise.all()
-
-## That small change can make your code feel much faster without changing the feature at all
-
-Simple rule:
-If task B depends on task A → use sequential await
-If tasks are independent → use Promise.all()
-
-If you use Cursor, you’re likely wasting 40% of your budget on "Here is the updated code" and "I hope this helps."
-
-You can save a lot by adding below rule.
-Copy-paste this into your project repository
-
-.cursor/rules/llm-token-efficiency.mdc
+1. Project hard constraints (`CLAUDE.md`, `.agile-v/`, security/policy files)
+2. This playbook’s **§0 Project Overrides** (if present)
+3. This playbook’s global body
+4. General best practices / training data
 
 ---
 
-description: Enforce token-efficient, code-centric responses
-alwaysApply: true
+## 0. Project Overrides — this repository only
+
+When working in **github-growth-bot**, these override soft global defaults. Full detail: [`CLAUDE.md`](../CLAUDE.md).
+
+1. MUST NEVER add artificial engagement (auto-star / auto-fork / auto-follow / metric inflation).
+2. Every backend endpoint except `GET /api/health` MUST require `Authorization: Bearer <API_KEY>`.
+3. Endpoint paths MUST NEVER contain `analytics`, `analysis`, `tracking`, `performance`, or `metrics` — use `insights` / `snapshots` / `benchmarks` / `runs`.
+4. Browser MUST NEVER hold the backend API key — Next.js Route Handlers proxy server-side.
+5. Frontend: SSR prefetch in `page.tsx`; `"use client"` only when required; NEVER `loading.tsx`; shell instant + data-slot skeletons.
+6. Independent prefetches MUST use `Promise.all`; critical dehydrated queries MUST be `await`ed (never `void` + `dehydrate`).
+7. CRUD MUST invalidate via TanStack Query + SSE (`LiveEventsProvider` / `use-live-events`) so all open tabs update without refresh.
+8. Types MUST come from OpenAPI (`frontend/types/`) — never hand-duplicate DTOs.
+9. Pipeline `Stage` contract + `db.rollback()` in runner exception paths are load-bearing.
+10. LLM calls MUST go through `LLMRouter` (multi-provider fallback). External side effects MUST use draft-and-approve.
+11. NEVER deploy without Gate 2 approval (POL-0006). NEVER commit secrets.
+12. Build Agent does not self-verify — Red Team / fresh subagent review for non-trivial work.
 
 ---
 
-### TOKEN EFFICIENCY RULES
+## 1. Purpose — how agents MUST use this document
 
-- No Yapping: no intros, no outros, no filler.
-- Surgical Strikes: only show changed code blocks. Never full files.
-- Expert Mode: zero explanations. No why/how unless asked.
-- Dry Output: bullets only if needed. No paragraphs.
-- Minimal Code: no comments, no boilerplate.
+1. Before creating a component, hook, provider, context, utility, type, constant, service, repository, API route, query, mutation, validation, theme, style, layout, middleware, helper, or config, the agent MUST search the repository for an existing implementation.
+2. If one exists, MUST reuse or extend it. Prefer extension over recreation. One architecture per project.
+3. MUST NOT duplicate query keys, API clients, UI primitives, validation schemas, or fetch helpers.
+4. Apply this playbook whenever the user asks for performance, scalability, clean code, fast UI, or “use project ideas / tricks / standards.”
 
-## If Claude keeps giving you inconsistent results, your setup is the problem, not Claude
+---
 
-Here's what separates a messy Claude Code setup from a high-performing one:
+## 2. Agent work protocol (MUST)
 
-▪️ Don't leave CLAUDE.md empty or vague
-Do define your tech stack, architecture, and conventions clearly, it's the first thing Claude reads every session
+When asked to audit, fix, optimize, or implement features:
 
-▪️ Don't mix personal preferences into shared project files
-Do use CLAUDE.local.md for individual overrides so your workflow doesn't break your teammates'
+1. **Deep audit first** — read architecture, existing patterns, shared `lib` / hooks / providers / types / UI, CSS tokens, layout conventions. Ignore missing screenshots if not attached.
+2. **Analyze & plan** — match the project’s workflow, folder layout, and style before writing code. Prefer the smallest change that meets the requirement.
+3. **Implement** — reuse shared global pieces; keep TypeScript strict; cover realistic success/error/empty/loading cases.
+4. **Instant UI consistency** — on any CRUD / mutation, invalidate (or precisely update) every affected cache so the **current page and all related pages/tabs** show fresh data immediately — **no full page refresh and no “navigate away to see it.”**
+5. **Performance** — no request waterfalls, no duplicate fetches, no unnecessary client boundaries, no hydration breaks, no complicated logic when a simple pattern already exists.
+6. **Do not delete product features** or large unrelated code to “clean up.” Only remove dead/unused code and debug logs in files you touch, when clearly unused.
+7. **Comments** — add brief *why* comments for non-obvious implementation choices. Prefer code + comments over unsolicited essays in chat.
+8. **NEVER** create unsolicited summary/changelog `.md` files unless the user explicitly asks.
+9. **NEVER** leave the app slower, broken, or with hydrate mismatches to “optimize.”
+10. **Verify** — lint, types, tests, loading/empty/error states, mobile/desktop as relevant before calling done.
 
-▪️ Don't re-explain your tooling every session
-Do configure mcp.json once, GitHub, JIRA, Slack, databases all connected and version-controlled
+### Token-efficient agent responses (SHOULD)
 
-▪️ Don't write one giant instruction file for everything
-Do use .claude/rules/ to separate concerns, code style, testing standards, API conventions load contextually
+When the user did not ask for a long explanation:
 
-▪️ Don't repeat the same prompts for recurring workflows
-Do create .claude/commands/ slash commands, one keystroke runs your entire review or deploy process
+- No filler intros/outros.
+- Prefer surgical diffs / changed regions over dumping entire files.
+- Explain why/how only when asked or when a decision is required.
+- Prefer bullets over essays.
 
-▪️ Don't let Claude operate without guardrails
-Do set up .claude/hooks/ to validate, lint, and block unsafe operations automatically
+### Tooling hygiene (SHOULD)
 
-▪️ Don't overload a single conversation with every task
-Do delegate to .claude/agents/ specialized sub-agents with isolated context for code review, security, and more
+- Shared instructions live in `CLAUDE.md` / this file.
+- Personal prefs belong in local-only overrides (e.g. `CLAUDE.local.md`) — do not pollute shared rules.
+- Prefer focused rules/commands/agents over one giant vague prompt.
+- Use specialized subagents for review/security when the project protocol requires it.
 
-Your Claude Code setup is either working for your team or against it. Structure it once. Benefit from it forever.
+---
 
-## Every Node.js developer should understand this Docker mistake. It costs minutes every build
+## 3. Engineering philosophy
 
-Docker layer caching is one of those things nobody explains until you've already wasted hours waiting for builds.
+**Junior:** “Does my API work?”  
+**Senior:** “Will this survive traffic, failure, and scale?”
 
-Here's the mistake I see in almost every first Dockerfile:
+1. MUST leave the codebase cleaner than you found it.
+2. MUST apply YAGNI, DRY, KISS.
+3. SHOULD design for failure isolation (timeouts, fallbacks, typed errors, fallback UI).
+4. MUST NOT invent infra (Redis, queues, sharding, service discovery) until measured need — unless the project already uses them.
 
-### ❌ Slow — reinstalls ALL node_modules on every code change
+---
 
-FROM node:20-alpine
-WORKDIR /app
-COPY . . # copies everything first
-RUN npm install # then installs
-CMD ["node", "dist/main.js"]
+## 4. Architecture concepts → practical rules
 
-The problem: COPY . . copies your source code before npm install. Every time you change a single line of TypeScript, Docker sees the layer as changed, invalidates the cache, and reinstalls all dependencies from scratch.
+| Concept | Global rule |
+|---|---|
+| Caching | Follow §7 cache priority. Invalidate on every mutation. NEVER require full refresh to see updates. |
+| Publish–Subscribe | Prefer SSE or WebSocket for live sync across tabs/views when multi-surface freshness matters. |
+| API Gateway | Prefer BFF / Route Handlers / API gateway so secrets stay server-side. |
+| Circuit breaker / fallback | For flaky third parties (esp. LLMs), MUST use ordered fallback or circuit behavior — no single-vendor hard fail. |
+| Rate limiting | SHOULD protect auth, public, and LLM-heavy surfaces. |
+| Reverse proxy vs load balancer | Reverse proxy: TLS, routing, security. Load balancer: distribute across instances. Configure the host (Coolify/Nginx/Traefik/Vercel); don’t reinvent in app code. |
+| CDN | Static assets via CDN/platform defaults; optimize above-fold images. |
+| Message queue | Use when async fan-out / retry isolation is required — not by default for simple CRUD. |
+| Sharding / consistent hashing / auto-scaling / service discovery | SHOULD NOT until scale metrics demand it. |
+| Load balancing | Keep app instances as stateless as practical; shared truth in DB (+ cache/SSE). |
 
-For a project with 400 packages, that's 90 seconds of wasted build time. Every. Single. Change.
+---
 
-### ✅ Fast — only reinstalls when package.json changes
+## 5. Shared folder architecture (reuse first)
 
-FROM node:20-alpine AS builder
-WORKDIR /app
+**Next.js App Router** (adapt names; do not invent parallel trees):
 
-### Copy dependency files FIRST (rarely changes)
+```
+app/                 # routes, page.tsx, layouts, Route Handlers
+components/          # feature UI + components/ui primitives
+hooks/               # React Query hooks + shared utilities
+providers/           # QueryClient, theme, live events, auth wrappers
+lib/                 # API clients, fetch helpers, utils, query keys
+types/               # generated or shared types (prefer OpenAPI)
+schemas/ | validators/  # Zod (or equivalent) input validation
+styles/ | (CSS tokens)  # consistent design tokens
+```
 
-COPY package\*.json ./
-RUN npm ci # cache hit unless package.json changed
+**Vite SPA** (frontend package separate from backend):
 
-### THEN copy source code (changes often)
+```
+src/
+  app/ or pages/     # router entry, route modules (React Router / TanStack Router)
+  components/        # feature UI + ui primitives
+  hooks/
+  providers/         # QueryClient, theme, auth, live events
+  lib/               # api client (base URL), query keys, utils
+  types/
+  schemas/ | validators/
+  styles/
+```
 
+Monorepo or sibling folders are fine (`frontend/` + `backend/`). MUST keep API contracts typed (OpenAPI) and MUST NOT duplicate business logic on both sides without a clear boundary.
+
+Optional when complexity grows: `services/`, `repositories/`, `actions/`, `stores/`, `contexts/` — only if the project already uses them or a clear boundary needs them.
+
+**Backend (typical):** routers/controllers → services → repositories/DB models → schemas/DTOs → tests per module.
+
+---
+
+## 6. Frontend modes: Next.js App Router vs Vite SPA
+
+Detect the mode from the repo. Do **not** apply Next-only rules (RSC, `force-dynamic`, `dehydrate`) to a Vite SPA, and do **not** invent a Vite BFF when the project is Next with Route Handlers.
+
+### 6.1 Shell-first UX (BOTH modes)
+
+1. MUST render shell immediately: nav, header, titles, labels, icons, buttons, card frames, tabs.
+2. MUST skeleton **only** data regions (lists, tables, charts, stats) with geometry matching final content (no CLS).
+3. Keep headings visible; pulse only the data slot.
+4. Prefer semantic icons (e.g. `lucide-react`) on titles/actions when the design system uses them.
+5. Goal: click → chrome stays; data fills without blanking the layout.
+
+### 6.2 Next.js App Router (SSR / RSC)
+
+1. MUST default to Server Components.
+2. MUST put SSR data-fetching / prefetch in `page.tsx` (or colocated Server Components).
+3. MUST add `"use client"` only for interaction, browser APIs, animations, forms, drag-and-drop, or client-only state.
+4. NEVER add `"use client"` “just in case.”
+5. Per-user / session dashboards SHOULD use `force-dynamic` (or equivalent). Perceived speed comes from cache + skeletons + SSE — not fake static HTML.
+6. NEVER add route-level `loading.tsx` that replaces the whole page shell on client navigation (unless the project explicitly standardized on it).
+7. Keep shared `layout.tsx` mounted across sibling routes.
+8. Use Next `<Link>` for prefetchable navigation; NEVER fake nav with `<button>`/`<div>`.
+9. Warm React Query via SSR `dehydrate` / `HydrationBoundary` (see §7).
+10. Secrets (API keys) MUST stay in Route Handlers / server — browser NEVER holds backend service keys.
+
+### 6.3 Vite SPA + separated backend
+
+Use when `vite.config.*` exists and the UI is a client SPA talking to an API on another origin/port (e.g. Vite `:5173` + FastAPI `:8000`).
+
+1. There is **no** RSC / `page.tsx` SSR / `HydrationBoundary` dehydrate path — skip §7 Next hydrate rules; use §7.2 SPA prefetch instead.
+2. MUST treat frontend and backend as separate deployables (separate Docker images / hosts / env files).
+3. MUST configure CORS on the backend for the Vite origin(s); frontend MUST use an explicit `VITE_*` (or equivalent) API base URL.
+4. Auth for SPAs:
+   - Prefer httpOnly secure cookies (same-site or properly configured cross-site) **or** short-lived tokens in memory — NEVER long-lived secrets in `localStorage` without a reviewed threat model.
+   - Browser MUST NEVER embed server-only service API keys (e.g. private LLM keys, admin master keys). User session tokens are different from service keys.
+5. MUST use a single typed API client in `lib/` (`fetch`/`axios` + OpenAPI types). Pages/hooks MUST NOT scatter raw `fetch(baseUrl + …)` strings.
+6. Router: React Router or TanStack Router — keep a persistent layout route so nav/shell does not remount on every child navigation.
+7. Use router `<Link>` (or equivalent); NEVER `<button onClick={() => navigate()}>` for normal navigational links.
+8. Instant nav: layout stays mounted; React Query cache makes back/forward and revisit feel instant; optimistic mutations + SSE/WS for multi-tab.
+9. Dev proxy (SHOULD): Vite `server.proxy` to the backend to avoid CORS pain in local dev; production still uses real API URL + CORS.
+10. Code-split route modules (`React.lazy` / router lazy) for large apps; prefetch next route data with TanStack Query when hovering/focusing links if it helps.
+11. Env: only `VITE_`-prefixed (or project-standard) public vars in the client bundle; document required vars in `.env.example`.
+12. Deploy: static assets to CDN/object storage/Nginx; API separately. SPA fallback MUST route unknown paths to `index.html` for client routing.
+
+```ts
+// GOOD — Vite env + shared client
+const api = createClient(import.meta.env.VITE_API_URL);
+```
+
+```ts
+// BAD — hard-coded prod URL + service key in the SPA
+fetch("https://api.example.com/admin", {
+  headers: { Authorization: "Bearer sk_live_..." },
+});
+```
+
+### 6.4 Instant navigation / perceived latency (BOTH)
+
+1. Prefer optimistic mutations; roll back on failure.
+2. Do not block the entire transition on one slow below-fold query.
+3. Parallelize independent fetches with `Promise.all`.
+4. Optional View Transitions — polish, not a substitute for correct caching.
+
+---
+
+## 7. Prefetch contracts
+
+### 7.1 Next.js + dehydrate (critical)
+
+When using TanStack Query + `dehydrate` + `HydrationBoundary`:
+
+1. Critical above-fold queries that are dehydrated MUST be `await`ed (usually via `Promise.all`).
+2. NEVER `void queryClient.prefetchQuery(...)` for a query included in `dehydrate(...)`. Empty dehydrated cache → client refetch → skeleton flash → broken SSR intent.
+3. Below-fold / optional queries MAY use `void prefetch` only when **not** dehydrated; client fetches on mount/visibility.
+4. Independent prefetches MUST run in parallel (`Promise.all`). NEVER sequential-await independent work.
+5. If B depends on A, await A, then prefetch B.
+6. Fix waterfalls and payload size before blaming `force-dynamic`.
+
+```tsx
+// GOOD — parallel critical prefetches, then dehydrate
+await Promise.all([
+  queryClient.prefetchQuery(queryA),
+  queryClient.prefetchQuery(queryB),
+]);
+return (
+  <HydrationBoundary state={dehydrate(queryClient)}>
+    <PageClient />
+  </HydrationBoundary>
+);
+```
+
+```tsx
+// BAD — waterfall
+await queryClient.prefetchQuery(queryA);
+await queryClient.prefetchQuery(queryB);
+```
+
+```tsx
+// BAD — void + dehydrate
+void queryClient.prefetchQuery(queryA);
+return <HydrationBoundary state={dehydrate(queryClient)}>...</HydrationBoundary>;
+```
+
+### 7.2 Vite SPA prefetch (no SSR dehydrate)
+
+1. Initial route: fetch in parallel on mount via React Query (`useQueries` / multiple `useQuery` with shared keys) — shell renders first; data slots skeleton.
+2. SHOULD prefetch on intent: `queryClient.prefetchQuery` in link `onMouseEnter` / `onFocus` / router loaders (TanStack Router) for likely next screens.
+3. Router loaders MUST still not block painting the shell — return cached data if present; otherwise show route shell + skeletons.
+4. Independent fetches MUST use `Promise.all` / `useQueries`.
+5. There is no `HydrationBoundary` requirement — do not copy-paste Next dehydrate patterns into Vite.
+
+---
+
+## 8. Cache strategy, TanStack Query, and CRUD sync
+
+### 8.1 Cache priority
+
+1. **React Query (or equivalent) memory cache** — primary UX cache (both Next and Vite)  
+2. **SSR dehydrate / HydrationBoundary** — Next.js first paint with data (skip on Vite SPA)  
+3. **Redis / server cache** — only when shared across instances or expensive reads justify it  
+4. **Database** — source of truth  
+
+**localStorage / sessionStorage**
+
+- SHOULD for non-sensitive UI prefs (theme, dismissed banners); on Next, use SSR-safe guards.
+- NEVER store service API keys or long-lived secrets in localStorage without a reviewed threat model.
+- Do not use localStorage as a substitute for React Query server state.
+
+**Redis**
+
+- Introduce when multi-instance, expensive aggregation, or rate-limit/session needs exist.
+- MUST invalidate or TTL-expire Redis keys on writes that affect cached reads.
+
+### 8.2 Query rules
+
+1. MUST use a single stable `queryKeys` (or equivalent) module — never ad-hoc string keys in components.
+2. SHOULD set `staleTime` / `gcTime` / `retry` / `enabled` deliberately (avoid refetch thrash; avoid lying forever-fresh).
+3. SHOULD use `select` / `placeholderData` / `keepPreviousData` (or `placeholderData: keepPreviousData`) to reduce flicker on pagination/filter changes.
+4. Prefer one fetch per resource per view — no duplicate hooks fighting each other.
+
+### 8.3 Mutation / CRUD invalidation checklist (MUST)
+
+Every create/update/delete (and any side-effecting action) MUST update UX immediately without full refresh:
+
+1. Optimistic update where it helps UX, with defined rollback  
+2. Invalidate or precisely patch **all** affected query keys  
+3. Current page UI  
+4. Related list / detail / sibling routes that show the same entity  
+5. Sidebar counts / badges / tabs counts  
+6. Dashboard cards / charts fed by that data  
+7. Pagination and search/filter result caches  
+8. Any Redis (or other) server cache keys for that resource  
+9. Broadcast via SSE/WebSocket (if the project has realtime) so **other browser tabs** sync  
+10. NEVER rely on `location.reload()` or “tell the user to refresh” as the primary mechanism  
+11. NEVER leave infinite skeletons on error — toast + rollback + error/empty UI  
+
+### 8.4 Client-side normalization
+
+- Default: keep server entities in React Query keyed by id; compose in selectors.
+- Full normalized client DB (e.g. TanStack DB / Relay-style) SHOULD only appear for long sessions with heavily shared, frequently updated entity graphs.
+- Benefit: one user update reflects in every post/card referencing that user; smaller memory; integrity.
+- Do not add normalization mid-feature without an explicit need.
+
+---
+
+## 9. Realtime (SSE / WebSocket)
+
+If the project has live updates:
+
+1. MUST wire a single provider/hook at the app shell so authenticated surfaces subscribe once.
+2. MUST map each event type to the correct query invalidations (parity — e.g. “job finished” also refreshes derived lists).
+3. SHOULD NOT poll when SSE/WS already covers the event.
+4. Next.js: proxies MUST keep secrets server-side and use dynamic/streaming-friendly route config.
+5. Vite SPA: connect EventSource/WebSocket to the API origin (or path proxied in dev); MUST send auth the same way as normal API calls (cookies or authorized URL/handshake). CORS and cookie `SameSite` MUST be correct for cross-origin SSE.
+
+If the project has no realtime yet: invalidate on the mutating client is the minimum bar; add SSE when multi-tab / multi-user freshness matters.
+
+---
+
+## 10. React performance
+
+### 10.1 Memoization (React Compiler era)
+
+1. React Compiler SHOULD replace most manual `useMemo` / `useCallback` / `memo`.
+2. SHOULD NOT wrap everything “for performance.”
+3. MAY memoize when profiling proves identity or expensive work is the bottleneck.
+4. NEVER ban memoization as dogma; NEVER require it as boilerplate.
+
+### 10.2 Async concurrency
+
+- Independent → MUST `Promise.all` (or equivalent).
+- Dependent → sequential await only for the dependency chain.
+- NEVER turn independent work into a waterfall.
+
+### 10.3 NEVER introduce
+
+- Request waterfalls  
+- Duplicated fetching / duplicated client state mirroring the query cache  
+- Unnecessary `"use client"` or hydration of huge trees (Next)  
+- Remounting the whole app shell on every SPA route change (Vite)  
+- Blocking the whole page on one non-critical slow query  
+- Layout shift from mismatched skeletons  
+- Giant client bundles (code-split routes; keep server-only logic on the backend)  
+
+### 10.4 Utility hooks catalog (implement once per repo)
+
+Prefer small shared hooks in `hooks/` (~150 lines total), not a new dependency (SSR-safe when on Next):
+
+| Hook | Purpose |
+|---|---|
+| `useDebounce` | Stop hammering APIs on every keystroke |
+| `usePrevious` | Compare prior value without render loops |
+| `useLocalStorage` | SSR-safe persisted UI prefs (not secrets) |
+| `useMediaQuery` | Responsive behavior beyond CSS alone |
+| `useAbortController` | Cancel in-flight requests on unmount; prevent races |
+
+Search before recreating.
+
+---
+
+## 11. Error handling
+
+1. NEVER swallow errors silently.
+2. Async boundaries SHOULD surface: typed error → user-visible toast or inline error → optional retry → fallback UI.
+3. Use `try` / `catch` / `finally` where cleanup matters (abort, locks, loading flags).
+4. MUST clear loading flags in `finally` (or equivalent) — NEVER spin forever.
+5. Prefer discriminated union / Result types over thrown `any`.
+6. Log enough for ops (without secrets); show humans actionable messages.
+
+---
+
+## 12. TypeScript standards
+
+1. MUST use strict TypeScript.
+2. NEVER use `any`. Prefer `unknown` and narrow.
+3. SHOULD prefer `satisfies`, `readonly`, and discriminated unions.
+4. Greenfield / when practical: SHOULD enable stricter flags such as `exactOptionalPropertyTypes`, `noImplicitOverride`, `noUncheckedIndexedAccess`.
+5. Prefer generated API types (OpenAPI) over hand-copied DTOs.
+6. SHOULD NOT blanket-disable ESLint/TS rules.
+7. Backend frameworks: always declare response schemas so clients stay typed.
+
+---
+
+## 13. UI / UX standards
+
+Aligned with Vercel Web Interface Guidelines (and similar):
+
+1. Stable skeletons matching final layout.  
+2. Short show-delay (~150–300ms) and minimum visible time for loaders when flicker would occur.  
+3. Links are links (`<Link>` / `<a>`).  
+4. Deep-link filters, tabs, pagination, expanded panels when shareability matters (`nuqs` or URL search params).  
+5. Desktop autofocus for a single primary field; avoid mobile autofocus that opens keyboard and shifts layout.  
+6. Enter submits when it is the clear primary action.  
+7. Don’t silently block keystrokes — validate and explain.  
+8. Preload above-fold images; lazy-load the rest.  
+9. Accessible names even when labels are visually hidden.  
+10. Empty / loading / error for every data region.  
+
+Skeleton **data** only — NEVER skeleton nav, sidebar, header, breadcrumbs, tabs, primary buttons, page title, or layout shell.
+
+Keep CSS consistent: shared tokens, spacing scale, one component library style — no one-off snowflake layouts for the same pattern.
+
+---
+
+## 14. API and backend standards
+
+1. Auth on protected routes; secrets server-side.  
+2. Typed request/response DTOs; validate inputs (Zod/Pydantic/etc.).  
+3. Transactions for multi-row atomic writes.  
+4. Pagination (cursor when lists grow).  
+5. Avoid N+1; batch; use indexes and connection pooling.  
+6. Idempotency for retried mutating endpoints as the product grows.  
+7. Consistent error shapes.  
+8. Rate limit / compress / ETag or cache headers where beneficial.  
+9. OpenAPI (or equivalent) kept in sync with reality.  
+10. Multi-tenant: scope every query by tenant/user; prefer 404 over existence-leaking 403 when that is the project rule.  
+11. Separated Vite SPA: MUST set CORS allowlist for frontend origins; SHOULD support credentials correctly if cookie auth; health check unauthenticated only when intentional.
+
+---
+
+## 15. Docker and deployment
+
+1. MUST copy dependency manifests first, install, then copy source (layer cache).  
+2. MUST use multi-stage builds for production when applicable.  
+3. SHOULD use slim/alpine bases.  
+4. CI SHOULD use lockfile-faithful installs (`npm ci`, pinned pip, etc.).  
+5. Production images SHOULD NOT ship unused build tooling, secrets, or unnecessary source.  
+
+```dockerfile
+# GOOD
+COPY package*.json ./
+RUN npm ci
 COPY . .
 RUN npm run build
+```
 
-### Production stage — lean image
+```dockerfile
+# BAD — any code change busts dependency cache
+COPY . .
+RUN npm install
+```
 
-FROM node:20-alpine AS production
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-CMD ["node", "dist/main.js"]
-
-The principle: things that change less frequently go higher in the Dockerfile.
-
-Three more rules I follow on every project:
-
-→ Use node:alpine over node:latest — image size drops from ~1GB to ~180MB
-→ Use npm ci not npm install in CI/CD — deterministic, no lock file surprises
-→ Always use a multi-stage build — your production image should never contain TypeScript source, devDependencies, or build tools
-
-Build time on a real NestJS project before this pattern: 4 minutes 20 seconds.
-After: 38 seconds (cache hit), 2 minutes 10 seconds (full rebuild).
-
-## Load Balancer vs Reverse Proxy — What's the Difference?
-
-Modern applications and websites handle large amounts of traffic. Two of the main instruments to ensure the smooth operation of large-scale systems are load balancers and reverse proxies.
-
-However, they approach traffic management in slightly different ways:
-
-𝗟𝗼𝗮𝗱 𝗯𝗮𝗹𝗮𝗻𝗰𝗲𝗿𝘀 are concerned with routing client requests across multiple servers to 𝗱𝗶𝘀𝘁𝗿𝗶𝗯𝘂𝘁𝗲 𝗹𝗼𝗮𝗱 and 𝗽𝗿𝗲𝘃𝗲𝗻𝘁 𝗯𝗼𝘁𝘁𝗹𝗲𝗻𝗲𝗰𝗸𝘀. This helps maximize throughput, reduce response time, and optimize resource use.
-
-𝗟𝗼𝗮𝗱 𝗯𝗮𝗹𝗮𝗻𝗰𝗲𝗿 𝗶𝗻 𝗮𝗰𝘁𝗶𝗼𝗻:
-
-𝟭) Client requests are sent to the load balancer instead of directly to the server(s) hosting the application.
-
-𝟮) A server is chosen from the load balancer's list using a predetermined algorithm.
-
-𝟯) The request is forwarded to the selected server.
-
-𝟰) The server processes the requests and sends the response back to the load balancer.
-
-𝟱) The load balancer forwards the response to the client.
-
-A 𝗿𝗲𝘃𝗲𝗿𝘀𝗲 𝗽𝗿𝗼𝘅𝘆 is a server that sits between external clients and internal applications. While reverse proxies can distribute load as a load balancer would, they provide advanced features like SSL termination, caching, and security. Reverse proxies are 𝗺𝗼𝗿𝗲 𝗰𝗼𝗻𝗰𝗲𝗿𝗻𝗲𝗱 𝘄𝗶𝘁𝗵 𝗹𝗶𝗺𝗶𝘁𝗶𝗻𝗴 𝗮𝗻𝗱 𝘀𝗮𝗳𝗲𝗴𝘂𝗮𝗿𝗱𝗶𝗻𝗴 𝘀𝗲𝗿𝘃𝗲𝗿 𝗮𝗰𝗰𝗲𝘀𝘀.
-
-Whilst load balancers and reverse proxies possess distinct functionalities, in practice the lines can blur, as many tools act as both a load balancer and reverse proxy. For example, tools like Nginx can perform both roles depending on their configuration.
-
-## Client-side data normalization — storing state like a database
-
-Data normalization in client apps is an idea that blew my mind when I first experienced its benefit. The core idea is to structure the data to reduce redundancy and improve data integrity. Instead of having nested data, entities store references to other entities via keys, similar to foreign keys in databases.
-
-This practice is commonly done in complex client apps like Facebook, Instagram, X, LinkedIn.
-
-⬇️ How does it work?
-
-Typically, when data is fetched from the server, it's directly displayed and then cached, no additional processing done. Some apps post-process the response by normalizing it and constructing a client-side database out of the response.
-
-E.g., in a timeline feed containing posts made by the same few users, the API may return duplicated user data for each post item, but the client normalizes the response, stores just one instance of that user data, modifies each post to point to that single instance.
-
-👍 Main benefits of this approach
-
-- Data integrity: If a user's details is updated, all posts displaying that user’s data will reflect the update
-- Reusable by various parts of the page and even across pages: Components that use that data (or a subset of it) can query it without needing to hit the server. If there's additional data needed, it can immediately display existing data and fetch the missing data while showing placeholders
-- Smaller memory footprint: Less data is stored, because there's no duplication
-
-🤔 How is it implemented?
-
-Apps define a client-side schema and converts API responses into a normalized format before storing in the client-side store. This is what the Tanstack DB library does, and it works seamlessly with Tanstack Query.
-
-🤯 Many apps you use are doing it
-
-All of Meta's web applications use a normalized client-side store, thanks to the properties of GraphQL. GraphQL APIs have a schema and every entity has a type. Relay (Meta's data fetching library) makes use of that to understand the relationships between entities and converts GraphQL responses into a normalized shape.
-
-Recently I discovered that apps like LinkedIn and Twitter take it even one step further, normalizing the data on the server, sending down extremely compact responses. The attached image demonstrates this.
-
-If your app is simple or usage session is short, you probably don't need this. This technique benefits client-heavy apps used for long sessions and have frequently-updated data.
-
-## Every time I start a new React project, I copy the same 5 hooks
-
-Not from a library. From my own collection, battle-tested across 15+ production apps.
-
-These aren't clever abstractions. They're boring, reliable utilities that eliminate the same bugs I've fixed dozens of times:
-
-1. useDebounce — stop hammering your API on every keystroke
-2. usePrevious — track previous values without infinite re-render loops
-3. useLocalStorage — state that survives refresh (SSR-safe, GDPR-aware)
-4. useMediaQuery — responsive logic, not just responsive styles
-5. useAbortController — cancel requests on unmount, prevent race conditions
-
-5 files. ~150 lines total. Zero dependencies.
-
-Senior engineers don't write more code. They carry better defaults.
-
-## RAG vs. CAG, clearly explained
-
-RAG is the default, but there's a problem most teams don't address.
-
-Every single query retrieves from the vector DB. Even when the data hasn't changed in months.
-
-That's wasted compute, added latency, and cost you don't need to pay.
-
-🔺What RAG does:
-
-Query comes in → embedding model converts it → vectors hit the DB → context retrieved → LLM generates response.
-
-Clean pipeline. But expensive at scale when half your queries are pulling the same static data every time.
-
-🔺What CAG adds:
-
-Cache-Augmented Generation lets the model store static information directly in KV memory.
-
-Instead of retrieving the same policies or documentation on every query, it's already there.
-
-🔺RAG + CAG combined:
-→ Static data (policies, docs, reference material) gets cached once in KV memory.
-→ Dynamic data (live documents, recent updates) gets fetched via retrieval as usual.
-
-## TanStack moved their blog to RSCs. 153KB less JavaScript. Blocking time: 1,200ms to 260ms
-
-But their RSC model is completely different from Next.js.
-
-Next.js: server owns the tree. You opt into client with 'use client'.
-
-TanStack Start: client owns the tree. RSCs are just streams you fetch and cache. Like useQuery but for server-rendered UI.
-
-Three APIs. That's it:
-• renderToReadableStream (server)
-• createFromReadableStream (client)
-• createFromFetch (convenience)
-
-Caching? TanStack Query. staleTime, refetch, cache keys. Nothing new to learn.
-
-No 'use server' either.
-Explicit server functions only.
-Smaller attack surface.
-
-As someone who's been using TanStack Router and Query for a while, this is exactly what I wanted. More control, less magic. RSCs without rewriting how I think about my app.
-
-RSCs as a tool you reach for. Not a paradigm you build around.
-
-## Most beginners confuse these AI models
-
-6 model types, explained in simple.
-
-1. Machine Learning Models
-
-• Collect labeled data → examples with correct answers
-• Clean and prepare data → remove errors, format properly
-• Choose algorithm → like decision tree, regression, etc.
-• Train model → learn patterns from data
-• Check performance → see how accurate it is
-• Adjust settings → improve results
-• Make predictions → use on new data
-• Track & improve → keep updating over time
-
-Idea: Learning from past data to predict future outcomes
+Never commit secrets. Follow the project’s deploy playbooks and human gates.
 
 ---
 
-1. Deep Learning Models
+## 16. Modern stack toolbox (SHOULD try when it fits)
 
-• Collect large datasets → needs lots of data
-• Standardize inputs → make data consistent
-• Create neural network → layers of “artificial neurons”
-• Forward pass → data flows through network
-• Calculate error → compare output vs actual
-• Backpropagation → send error backward
-• Update weights → improve learning
-• Repeat training → many cycles
-• Generate output → final prediction/result
+Not mandatory installs — use when the problem matches. Prefer what the repo already chose.
 
-Idea: Brain-like system learning complex patterns
+| Tool / pattern | Use when |
+|---|---|
+| TanStack Query | Server state, cache, mutations (SSR hydrate on Next; client cache on Vite) |
+| Zod (or equivalent) | Runtime validation at boundaries |
+| OpenAPI → `openapi-typescript` | End-to-end typed clients across separated FE/BE |
+| `nuqs` / URL state | Shareable filters/tabs/pagination |
+| lucide-react + shadcn/Base UI | Consistent accessible UI primitives |
+| SSE or WebSocket | Multi-tab / live invalidation |
+| React Compiler | Default memoization without boilerplate |
+| Next.js App Router RSC | SSR/server UI; client only when needed |
+| Vite + React Router / TanStack Router | SPA with separated backend |
+| Vite `server.proxy` | Local dev without CORS friction |
+| View Transitions | Optional navigation polish |
+| Vitest + Testing Library | Unit/component tests |
+| Playwright | E2E critical flows |
+| Docker multi-stage + alpine | Fast, small deploys (separate images for SPA static + API) |
+| Multi-provider LLM router | Resilience; avoid vendor lock-in |
+| MCP + specialized subagents | Agent tooling, review, security |
+| Redis | Shared cache / rate limits / sessions at scale |
+| Cursor pagination | Large lists |
 
----
-
-1. Generative Models
-
-• Train on data → learn patterns
-• Understand structure → how data looks
-• Take user input → prompt or instruction
-• Run through model → process input
-• Sample outputs → generate possibilities
-• Create content → text, image, etc.
-• Improve with feedback → refine results
-• Produce final output → polished content
-
-Idea: AI that creates (ChatGPT etc)
+**Stack loyalty:** stay on the repo’s chosen mode (Next **or** Vite SPA). Do not migrate Next ↔ Vite or to alternate RSC models (e.g. TanStack Start) without an explicit project decision.
 
 ---
 
-1. Hybrid Models
+## 17. Performance and latency budget
 
-• Combine different models → use strengths of each
-• Train parts separately → optimize individually
-• Build connection logic → link models
-• Send input through pipeline → step-by-step flow
-• Route based on rules → decide which model to use
-• Combine outputs → merge results
-• Fix conflicts → resolve differences
-• Final output → best combined answer
-
-Idea: Multiple AI systems working together
-
----
-
-1. NLP Models
-
-• Clean text → remove noise
-• Tokenize → break into words/tokens
-• Convert to vectors → numbers for AI
-• Use attention → focus on important words
-• Feed into model → process meaning
-• Decode/classify → understand or label
-• Clean output → refine text
-• Generate output → answer or response
-
-Idea: AI that understands & writes language
+1. Optimize **perceived** paint: shell first, data second.  
+2. Parallelize independent I/O everywhere (server and client).  
+3. Measure before micro-optimizing (Profiler, Network, Lighthouse, backend query plans).  
+4. Watch CLS, LCP, INP; stable skeletons; avoid font/layout jumps.  
+5. Keep client JS lean — push secrets and heavy work to the backend; on Vite, code-split routes.  
+6. DB: indexes, pooling, no N+1, pagination.  
+7. Images: correct sizes, modern formats, lazy below fold.  
+8. Cache with honest TTLs; invalidate on write.  
+9. Separated FE/BE: measure API latency and payload size — SPA perceived speed is dominated by network + cache discipline.  
 
 ---
 
-1. Computer Vision Models
-   • Input image → raw picture
-   • Resize/normalize → standard format
-   • Extract features → edges, shapes, colors
-   • Apply CNN layers → detect patterns
-   • Identify spatial patterns → objects & positions
-   • Classify/detect → what’s in the image
-   • Refine results → improve accuracy
-   • Output → labels, boxes, predictions
-
-Idea: AI that “sees” & understands images
-
-## Make your product go from "Eh it works" to "Wow, the experience is amazing!" with Vercel's web interface guidelines
-
-Make your product go from "Eh it works" to "Wow, the experience is amazing!" with Vercel's web interface guidelines.
-
-Vercel's web interface guidelines are public for anyone to learn from? It's a gold mine of UI/UX best practices and I learnt a lot from reading through them.
-
-The ones that stood out to me:
-
-→ Minimum loading-state duration. If you show a spinner/skeleton, add a short show-delay (~150–300 ms) & a minimum visible time (~300–500 ms) to avoid flicker on fast responses. The <Suspense> component in React does this automatically.
-
-→ Autofocus for speed. On desktop screens with a single primary input, autofocus. Rarely autofocus on mobile because the keyboard opening can cause layout shift.
-
-→ Deep-link everything. Filters, tabs, pagination, expanded panels, anytime useState is used.
-
-→ Links are links. Use <a> or <Link> for navigation so standard browser behaviors work (Cmd/Ctrl+Click, middle-click, right-click to open in a new tab). Never substitute with <button> or <div> for navigational links.
-
-→ No excessive scrollbars. Only render useful scrollbars; fix overflow issues to prevent unwanted scrollbars. On macOS set "Show scroll bars" to "Always" to test what Windows users would see.
-
-→ Stable skeletons. Skeletons mirror final content exactly to avoid layout shift.
-
-→ Don’t ship the schema. Visual layouts may omit visible labels, but accessible names/labels still exist for assistive tech.
-
-→ Enter submits. When a text input is focused, Enter submits if it's the only control. If there are many controls, apply to the last control.
-
-→ Don’t block typing. Even if a field only accepts numbers, allow any input & show validation feedback. Blocking keystrokes entirely is confusing because the user gets no explanation.
-
-→ Preload wisely. Preload only above-the-fold images; lazy-load the rest.
-
-The full guide spans 7 categories: Interactions, Animations, Layout, Content, Forms, Performance, and Design.
-
-These guidelines are also shipped as an AGENTS.md you can drop into your repo so your coding agents can follow these rules during generation.
-
-## I've completely stopped using Anthropic and OpenAI. Here's why I'm not going back
-
-I've completely stopped using Anthropic and OpenAI. Here's why I'm not going back.
-
-Six months ago I would've called myself a loyal Claude and GPT user. Today my entire workflow runs on Kimi K2.6 and Qwen 3.6. Both open source.
-
-This wasn't ideological. It was practical.
-
-❌ I watched Anthropic silently drop the default "effort" setting to medium, making Claude noticeably dumber, then ship a new version and call it progress.
-❌ I watched a 110-person company get banned from API access overnight while still receiving invoices.
-❌ Pro plan users were hitting rate limits after barely using the thing, then waiting hours for it to reset then get Claude Code access just removed.
-❌ A tokenizer update quietly inflated costs by up to 35%.
-
-And they started banning third-party tools that competed with their own products.
-
-When the company selling you a tool can change what that tool does without telling you, you don't own anything. You're renting.
-
-Meanwhile, open source passed them.
-
-➡️ Kimi K2.6 now sits at #1 on SWE-Bench Pro (58.6), ahead of GPT-5.4, Gemini 3.1 Pro, and Claude Opus 4.6.
-➡️ It leads open-weight models on Design Arena, matching Opus 4.7.
-➡️ It can coordinate 300 specialized agents across thousands of steps.
-➡️ The plan I'm on costs $39/month. No surprise limits. No bans.
-
-And if Moonshot changes their pricing tomorrow, I can pull the weights from Hugging Face and run it locally through Ollama or just use Openrouter. Nobody can take my tools away. That's the difference.
-
-If you're building a business on LLMs, stop tying yourself to one provider. I've restructured everything so I can swap models in minutes. I replaced my claude.md with agents.md. I use harnesses like OpenCode or Pi. Nothing in my stack assumes a specific vendor.
-
-If your whole workflow breaks because one company changes their terms, you don't have a foundation. You have a dependency.
-
-Open source is the only version of this future where you actually stay in control.
-
-## Everyone is talking about Agentic AI. Most people are confusing it with something else
-
-Everyone is talking about Agentic AI. Most people are confusing it with something else.
-
-Here's what it actually is, and what it's not:
-
-❌ These are NOT Agentic AI:
-
-🔺 LLM Chatbots:
-You ask. It answers. That's it.
-
-Query goes in → System prompt → LLM processes → Output comes out No memory.
-
-No planning. No autonomy. Reactive by design. Not agentic.
-
-🔺 RPA (Robotic Process Automation):
-It executes scripts. It doesn't think.
-
-Query triggers a script → Fixed rules execute → Output comes out It follows what it was programmed to do.
-
-Change the environment and it breaks. No reasoning involved.
-
-🔺 Simple RAG:
-Smarter answers, but still not agentic.
-
-Query gets embedded → searches knowledge base, vector DB, web data → augments LLM context → Output comes out Better retrieval.
-
-Still just answering questions. No planning. No action. No autonomy.
-
-✅ This IS Agentic AI:
-
-A true agentic system doesn't just respond. It plans, remembers, acts, and adapts, on its own.
-
-→ Memory: knows what happened before and builds on it
-→ Planning: breaks complex tasks into steps before acting
-→ Tools: takes real actions in the world, not just generates text
-→ Feedback loops: reflects, adjusts, and improves mid-task
-→ Human-in-the-loop: escalates when it needs to
-→ Multi-agent coordination via MCP + A2A Protocol:
-
-▪️ Coding Agent → writes and executes code (LangChain)
-▪️ Retrieval Agent → finds and pulls relevant information (LlamaIndex)
-▪️ Citation Agent → sources and verifies claims (CrewAI)
-
-The orchestrator delegates. The agents specialize. The system adapts.
-That's Agentic AI.
-
-## 6 Clean code rules
-
-(Start these now):
-
-1 Separation of Concerns (SOC):
-
-☑ Break down a complex program into smaller units.
-☑ Each unit should focus on a specific task.
-
-===
-
-2 Document Your Code (DYC):
-
-☑ Write code for your future self and others.
-☑ Explain complex code sections with comments and documentation.
-
-===
-
-3 Don't Repeat Yourself (DRY):
-
-☑ Don't waste time writing the same code again.
-☑ Instead use functions, modules, and existing libraries.
-
-===
-
-4 Keep It Simple, Stupid (KISS):
-
-☑ Simple is hard, but better.
-☑ Readable code > clever code.
-
-===
-
-5 Test Driven Development (TDD):
-
-☑ Write a failing test first.
-☑ Write code to make the test pass.
-☑ Then clean up the code without changing behaviour.
-
-===
-
-6 You Ain't Gonna Need It (YAGNI):
-
-☑ Build only essential features.
-☑ Don't build features you think you might need later.
-
-===
-
-The bottom line:
-☑ Leave the codebase cleaner than you found it.
+## 18. Agentic AI and LLM product rules
+
+### 18.1 What is agentic
+
+| Not agentic | Agentic |
+|---|---|
+| Single-shot chatbot Q&A | Plans, uses tools, remembers, adapts |
+| Fixed RPA scripts | Feedback loops + human-in-the-loop |
+| Simple RAG answers only | Multi-step tool use with escalation |
+
+### 18.2 RAG vs CAG
+
+- **RAG:** retrieve dynamic/changing context per query.  
+- **CAG:** keep stable policies/docs in cached model/KV context.  
+- Combined: cache static; retrieve dynamic.  
+- Do not build vector infra unless a requirement needs it.
+
+### 18.3 Product LLM usage
+
+1. MUST keep providers swappable (router / gateway).  
+2. MUST NOT hard-wire the product to one vendor’s proprietary API shape without an abstraction.  
+3. Human gates for irreversible external actions (publish, pay, delete, message).  
+4. Coding agents: implementer ≠ verifier; use review/security subagents when protocol requires.
+
+---
+
+## 19. Clean code and Definition of Done
+
+### 19.1 Clean code (MUST)
+
+1. Separation of concerns  
+2. Comment *why*, not *what*  
+3. DRY  
+4. KISS  
+5. TDD where the project standard requires it (esp. backend)  
+6. YAGNI  
+
+### 19.2 Definition of Done
+
+Every non-trivial change MUST verify as applicable:
+
+- Lint + TypeScript  
+- Tests  
+- Build (when release-adjacent)  
+- Next: SSR/hydration correct (no void+dehydrate mistake); Vite: no remounting shell, CORS/env correct  
+- Accessibility of new interactive UI  
+- Loading / empty / error states  
+- Mobile + desktop  
+- Theme/dark mode not broken  
+- Security (no secrets, auth, no cross-tenant leaks)  
+- Mutation invalidation covers current + related views (+ SSE if present)  
+- No new dead code or debug logs left behind  
+- Dependencies: no ignored high CVEs at milestone close  
+
+---
+
+## 20. Quick reference card
+
+| Topic | Rule |
+|---|---|
+| Reuse | Search repo before creating anything |
+| Stack | Detect Next vs Vite SPA; apply matching rules only |
+| Shell UX | Instant shell; skeleton data only; avoid blanking chrome |
+| Navigation | Router `<Link>` + layout stay mounted + warm RQ cache |
+| Prefetch (Next) | `await Promise.all` + dehydrate; never `void` + dehydrate |
+| Prefetch (Vite) | Parallel `useQuery` / intent `prefetchQuery`; no dehydrate copy-paste |
+| CRUD | Optimistic + invalidate all related keys + SSE/tabs; no full refresh |
+| Cache | RQ → (SSR hydrate if Next) → optional Redis → DB |
+| Secrets | Never put service keys in the SPA bundle |
+| Types | Strict; no `any`; prefer generated DTOs |
+| Errors | Typed + toast + retry + fallback; never hang loading |
+| Memo | Compiler first; manual only when profiled |
+| Agents | Audit → plan → implement; no unsolicited summary `.md` |
+| Deploy | Layer-cached Docker; separate SPA static + API when split; no secrets |
+
+When in doubt: match the nearest existing route module, hook, provider, and UI primitive in the repo — then tighten toward this playbook.

@@ -33,6 +33,7 @@ A multi-tenant GitHub account analytics/growth SaaS, growing into a draft-and-ap
 
 **Frontend (`frontend/` — Next.js App Router, TypeScript):**
 
+- Engineering standards for SSR, prefetch/hydrate, TanStack Query, SSE, UI, and agent reuse rules: [`docs/PROJECT_IDEA.md`](docs/PROJECT_IDEA.md).
 - SSR data-fetching goes directly in `page.tsx` (Server Components); only genuinely interactive code goes in `use client` components.
 - No `loading.tsx` files. Page shell (headers, labels, icons, buttons, card frames) renders instantly; only data-bearing regions show inline skeletons matching the real content's dimensions.
 - Independent server prefetches run in parallel (`Promise.all`), never sequential `await`s.
