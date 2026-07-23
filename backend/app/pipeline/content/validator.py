@@ -76,4 +76,14 @@ class ContentValidator(Stage):
         return cited.issubset(known_numbers)
 
     def _known_numbers(self, ctx: ContentPipelineContext) -> set[int]:
-        return {value for value in ctx.raw.values() if isinstance(value, int)}
+        known = {value for value in ctx.raw.values() if isinstance(value, int)}
+        # forks/watchers/open-issues live nested under raw["repo"], not top-level —
+        # without these, a candidate correctly citing real fork/watcher/issue counts
+        # (e.g. carried over from the existing README) gets rejected as unverified.
+        repo_data = ctx.raw.get("repo")
+        if isinstance(repo_data, dict):
+            for key in ("forks_count", "watchers_count", "open_issues_count", "stargazers_count"):
+                value = repo_data.get(key)
+                if isinstance(value, int):
+                    known.add(value)
+        return known

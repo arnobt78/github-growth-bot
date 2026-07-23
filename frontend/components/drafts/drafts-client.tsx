@@ -10,13 +10,18 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { DraftContent } from "@/components/drafts/draft-content";
 import { useDrafts, useReviewDraft, useTriggerContentRun } from "@/hooks/use-drafts";
 import { useRepos } from "@/hooks/use-repos";
+import type { DraftKind } from "@/types/drafts";
 
+// `satisfies` gives compile-time exhaustiveness against DraftKind (a new kind
+// added to the backend without a label here fails the build) while keeping
+// the variable's type as Record<string, string> so draft.kind (a plain
+// string from the generated OpenAPI type) can still index it directly.
 const DRAFT_KIND_LABELS: Record<string, string> = {
   readme_suggestion: "README suggestion",
   missing_doc_suggestion: "Missing doc",
   topic_suggestion: "Topic suggestion",
   seo_suggestion: "SEO suggestion",
-};
+} satisfies Record<DraftKind, string>;
 
 export function DraftsClient() {
   const { data: drafts } = useDrafts();

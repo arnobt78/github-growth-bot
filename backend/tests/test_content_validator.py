@@ -137,6 +137,18 @@ def test_validator_still_rejects_fabricated_metric_claims_alongside_incidental_n
     assert ctx.tasks[0].valid is False
 
 
+def test_validator_accepts_winner_citing_accurate_nested_repo_stats():
+    task = ContentTask(
+        kind="readme_suggestion", target="readme", structured=False, current=None, source_material={},
+        candidates=["This repo has 5 stars, 12 forks, and 3 open issues."],
+    )
+    ctx = _ctx_with_task(task, raw={"stars": 5, "repo": {"forks_count": 12, "watchers_count": 7, "open_issues_count": 3}})
+
+    ctx = ContentValidator(llm_router=MagicMock()).run(ctx)
+
+    assert ctx.tasks[0].valid is True
+
+
 def test_validator_leaves_winner_none_on_out_of_range_best_index():
     task = ContentTask(
         kind="readme_suggestion", target="readme", structured=False, current=None, source_material={},
