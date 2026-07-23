@@ -108,6 +108,7 @@ class PipelineRun(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[str] = mapped_column(String(50), default="running")
+    pipeline_kind: Mapped[str] = mapped_column(String(50), default="analytics")
 
 
 class StageRun(Base):

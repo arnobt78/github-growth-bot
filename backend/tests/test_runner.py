@@ -107,3 +107,44 @@ def test_runner_rolls_back_shared_session_after_stage_db_integrity_error(seed_us
     assert marks_row.status == "ok"
 
     db.close()
+
+
+class _RecordsRepoStage(Stage):
+    name = "records_repo"
+
+    def run(self, ctx):
+        ctx.raw["saw_repo_id"] = ctx.repo.id
+        return ctx
+
+
+def test_runner_defaults_to_analytics_pipeline_kind(seed_user):
+    db, repo = _db(seed_user)
+    runner = PipelineRunner(stages=[_RecordsRepoStage()], db_session=db)
+    runner.run_for_repo(repo)
+
+    run_row = db.query(PipelineRun).first()
+    assert run_row.pipeline_kind == "analytics"
+    db.close()
+
+
+def test_runner_uses_custom_context_factory_and_pipeline_kind(seed_user):
+    db, repo = _db(seed_user)
+
+    class _FakeCtx:
+        def __init__(self, repo):
+            self.repo = repo
+            self.raw = {}
+            self.errors = []
+
+    runner = PipelineRunner(
+        stages=[_RecordsRepoStage()],
+        db_session=db,
+        context_factory=_FakeCtx,
+        pipeline_kind="content",
+    )
+    ctx = runner.run_for_repo(repo)
+
+    assert ctx.raw["saw_repo_id"] == repo.id
+    run_row = db.query(PipelineRun).first()
+    assert run_row.pipeline_kind == "content"
+    db.close()

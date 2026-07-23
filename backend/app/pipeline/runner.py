@@ -1,3 +1,4 @@
+from typing import Any, Callable
 import time
 from datetime import datetime, timezone
 
@@ -8,17 +9,25 @@ from app.pipeline.base import PipelineContext, Stage
 
 
 class PipelineRunner:
-    def __init__(self, stages: list[Stage], db_session: Session):
+    def __init__(
+        self,
+        stages: list[Stage],
+        db_session: Session,
+        context_factory: Callable[[Repo], Any] = PipelineContext,
+        pipeline_kind: str = "analytics",
+    ):
         self.stages = stages
         self.db = db_session
+        self.context_factory = context_factory
+        self.pipeline_kind = pipeline_kind
 
-    def run_for_repo(self, repo: Repo) -> PipelineContext:
-        run_row = PipelineRun(status="running", user_id=repo.user_id)
+    def run_for_repo(self, repo: Repo) -> Any:
+        run_row = PipelineRun(status="running", user_id=repo.user_id, pipeline_kind=self.pipeline_kind)
         self.db.add(run_row)
         self.db.commit()
         self.db.refresh(run_row)
 
-        ctx = PipelineContext(repo=repo)
+        ctx = self.context_factory(repo)
         had_error = False
 
         for stage in self.stages:

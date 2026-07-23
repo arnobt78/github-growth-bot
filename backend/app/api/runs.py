@@ -16,6 +16,7 @@ router = APIRouter(prefix="/runs", tags=["runs"], dependencies=[Depends(require_
 class PipelineRunOut(BaseModel):
     id: int
     status: str
+    pipeline_kind: str
     started_at: datetime
     finished_at: datetime | None
 
