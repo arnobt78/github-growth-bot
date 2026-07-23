@@ -80,3 +80,49 @@ def test_validator_trusts_synthesizer_shape_check_for_structured_tasks():
 
     assert ctx.tasks[0].winner == ["cli", "automation", "devtools"]
     assert ctx.tasks[0].valid is True
+
+
+def test_validator_leaves_winner_none_on_judge_call_exception():
+    task = ContentTask(
+        kind="readme_suggestion", target="readme", structured=False, current=None, source_material={},
+        candidates=["A", "B"],
+    )
+    ctx = _ctx_with_task(task, raw={"stars": 5})
+
+    llm = MagicMock()
+    llm.chat_completion.side_effect = RuntimeError("all providers failed")
+    ctx = ContentValidator(llm_router=llm).run(ctx)
+
+    assert ctx.tasks[0].winner is None
+    assert ctx.tasks[0].valid is False
+    assert any("judge call failed" in e for e in ctx.errors)
+
+
+def test_validator_leaves_winner_none_on_malformed_judge_json():
+    task = ContentTask(
+        kind="readme_suggestion", target="readme", structured=False, current=None, source_material={},
+        candidates=["A", "B"],
+    )
+    ctx = _ctx_with_task(task, raw={"stars": 5})
+
+    llm = MagicMock()
+    llm.chat_completion.return_value = "not json"
+    ctx = ContentValidator(llm_router=llm).run(ctx)
+
+    assert ctx.tasks[0].winner is None
+    assert ctx.tasks[0].valid is False
+
+
+def test_validator_leaves_winner_none_on_out_of_range_best_index():
+    task = ContentTask(
+        kind="readme_suggestion", target="readme", structured=False, current=None, source_material={},
+        candidates=["A", "B"],
+    )
+    ctx = _ctx_with_task(task, raw={"stars": 5})
+
+    llm = MagicMock()
+    llm.chat_completion.return_value = '{"best_index": 99, "reason": "bogus"}'
+    ctx = ContentValidator(llm_router=llm).run(ctx)
+
+    assert ctx.tasks[0].winner is None
+    assert ctx.tasks[0].valid is False
