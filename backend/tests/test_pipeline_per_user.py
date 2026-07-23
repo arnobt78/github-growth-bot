@@ -234,3 +234,41 @@ def test_notify_true_sends_reauth_alert(mock_build_stages, mock_publish, mock_no
     reauth_db_arg, reauth_user_arg = mock_notify_reauth.call_args[0]
     assert reauth_user_arg.id == user_id
     mock_notify_degraded.assert_not_called()
+
+
+@patch("app.pipeline.jobs.notify_needs_reauth")
+@patch("app.pipeline.jobs.notify_pipeline_degraded")
+@patch("app.events.broadcaster.publish")
+@patch("app.pipeline.jobs.build_stages")
+def test_notify_true_skips_degraded_alert_when_same_user_also_needs_reauth(
+    mock_build_stages, mock_publish, mock_notify_degraded, mock_notify_reauth
+):
+    # Same user tracks two repos: repo A (processed first) hits real,
+    # non-auth errors and lands the user in `degraded`; repo B (processed
+    # after) hits needs_reauth and lands the same user in
+    # `failed_auth_user_ids`. Only the reauth email should be sent — the
+    # degraded alert must be suppressed to avoid a confusing double
+    # notification in the same run.
+    user_id, repo_a_id = _seed_user_with_repo("904")
+    repo_b_id = _add_repo_for_user(user_id, "repo-904-second")
+
+    def run_for_repo_side_effect(repo):
+        if repo.id == repo_a_id:
+            return type("Ctx", (), {"errors": ["extractor: boom"]})()
+        return type(
+            "Ctx", (), {"errors": ["extractor: needs_reauth: GitHub token rejected"]}
+        )()
+
+    mock_runner = MagicMock()
+    mock_runner.run_for_repo.side_effect = run_for_repo_side_effect
+    with patch("app.pipeline.jobs.PipelineRunner", return_value=mock_runner):
+        from app.pipeline.jobs import run_pipeline_for_all_repos
+
+        db = SessionLocal()
+        run_pipeline_for_all_repos(db, user_id=user_id, notify=True)
+        db.close()
+
+    mock_notify_reauth.assert_called_once()
+    reauth_db_arg, reauth_user_arg = mock_notify_reauth.call_args[0]
+    assert reauth_user_arg.id == user_id
+    mock_notify_degraded.assert_not_called()

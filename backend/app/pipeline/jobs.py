@@ -76,6 +76,11 @@ def run_pipeline_for_all_repos(db: Session, user_id: int | None = None, notify: 
 
     if notify:
         for uid, repo_names in degraded.items():
+            if uid in failed_auth_user_ids:
+                # The reauth email is the more actionable, blocking issue for this
+                # user in this run — nothing else can be verified as genuinely
+                # working until they reconnect, so it wins over the degraded alert.
+                continue
             owner = db.get(User, uid)
             if owner is not None:
                 notify_pipeline_degraded(owner, repo_names)
