@@ -113,6 +113,30 @@ def test_validator_leaves_winner_none_on_malformed_judge_json():
     assert ctx.tasks[0].valid is False
 
 
+def test_validator_ignores_incidental_non_metric_numbers():
+    task = ContentTask(
+        kind="readme_suggestion", target="readme", structured=False, current=None, source_material={},
+        candidates=["Requires Python 3.11 and was created in 2026. This repo has 5 stars."],
+    )
+    ctx = _ctx_with_task(task, raw={"stars": 5})
+
+    ctx = ContentValidator(llm_router=MagicMock()).run(ctx)
+
+    assert ctx.tasks[0].valid is True
+
+
+def test_validator_still_rejects_fabricated_metric_claims_alongside_incidental_numbers():
+    task = ContentTask(
+        kind="readme_suggestion", target="readme", structured=False, current=None, source_material={},
+        candidates=["Built with Python 3.11 in 2026. This repo has 99999 stars!"],
+    )
+    ctx = _ctx_with_task(task, raw={"stars": 5})
+
+    ctx = ContentValidator(llm_router=MagicMock()).run(ctx)
+
+    assert ctx.tasks[0].valid is False
+
+
 def test_validator_leaves_winner_none_on_out_of_range_best_index():
     task = ContentTask(
         kind="readme_suggestion", target="readme", structured=False, current=None, source_material={},

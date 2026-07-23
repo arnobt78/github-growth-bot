@@ -46,7 +46,7 @@ def test_synthesizer_omits_candidate_on_call_failure():
     task = ContentTask(kind="readme_suggestion", target="readme", structured=False, current=None, source_material={"readme": "", "topics": [], "description": None})
     ctx = _ctx_with_task(task)
     llm = MagicMock()
-    llm.available_provider_names.return_value = ["groq"]
+    llm.available_provider_names.return_value = ["groq", "gemini", "openrouter"]
     llm.chat_completion.side_effect = [RuntimeError("boom"), "# New B", RuntimeError("boom again")]
 
     ctx = ContentSynthesizer(llm_router=llm).run(ctx)

@@ -11,6 +11,13 @@ import { DraftContent } from "@/components/drafts/draft-content";
 import { useDrafts, useReviewDraft, useTriggerContentRun } from "@/hooks/use-drafts";
 import { useRepos } from "@/hooks/use-repos";
 
+const DRAFT_KIND_LABELS: Record<string, string> = {
+  readme_suggestion: "README suggestion",
+  missing_doc_suggestion: "Missing doc",
+  topic_suggestion: "Topic suggestion",
+  seo_suggestion: "SEO suggestion",
+};
+
 export function DraftsClient() {
   const { data: drafts } = useDrafts();
   const { data: repos } = useRepos();
@@ -54,7 +61,7 @@ export function DraftsClient() {
                   <p className="text-xs font-medium text-muted-foreground">
                     {draft.repo_id !== null ? repoNameById.get(draft.repo_id) ?? `repo #${draft.repo_id}` : "Account-level"}
                     {" · "}
-                    {draft.kind}
+                    {DRAFT_KIND_LABELS[draft.kind] ?? draft.kind}
                   </p>
                   <div className="mt-1">
                     <DraftContent kind={draft.kind} content={draft.content} />

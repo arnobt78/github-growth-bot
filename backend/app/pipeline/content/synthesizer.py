@@ -62,7 +62,10 @@ class ContentSynthesizer(Stage):
             {"role": "user", "content": prompt},
         ]
         provider_names = self.llm_router.available_provider_names()
-        skip_progression = [set(), set(provider_names[:1]), set(provider_names[:2])]
+        skip_progression = [
+            skip for skip in (set(), set(provider_names[:1]), set(provider_names[:2]))
+            if len(skip) < len(provider_names)
+        ]
 
         for skip in skip_progression:
             try:

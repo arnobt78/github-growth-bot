@@ -49,8 +49,8 @@ export function DraftContent({ kind, content }: { kind: string; content: unknown
   if (kind === "topic_suggestion" && isTopicSuggestion(content)) {
     return (
       <div className="flex flex-wrap gap-1.5">
-        {content.suggested.map((topic) => (
-          <Chip key={topic}>{topic}</Chip>
+        {content.suggested.map((topic, i) => (
+          <Chip key={`${topic}-${i}`}>{topic}</Chip>
         ))}
       </div>
     );
@@ -61,8 +61,8 @@ export function DraftContent({ kind, content }: { kind: string; content: unknown
       <div className="space-y-1.5 text-sm">
         <p>{content.suggested_description}</p>
         <div className="flex flex-wrap gap-1.5">
-          {content.keywords.map((keyword) => (
-            <Chip key={keyword}>{keyword}</Chip>
+          {content.keywords.map((keyword, i) => (
+            <Chip key={`${keyword}-${i}`}>{keyword}</Chip>
           ))}
         </div>
       </div>

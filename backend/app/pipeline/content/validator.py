@@ -62,8 +62,17 @@ class ContentValidator(Stage):
         except Exception as exc:
             ctx.errors.append(f"content_validator: judge call failed for {task.kind}/{task.target}: {exc}")
 
+    # Matches "42 stars", "15 open issues", etc. — only numbers making a specific
+    # repo-metric claim are cross-checked. A blanket "every digit in the document"
+    # check over-rejects real README/doc text, which routinely contains incidental
+    # numbers (versions, years, ports) that have nothing to do with fabricated stats.
+    _METRIC_CLAIM_PATTERN = re.compile(
+        r"(\d+)\s*(?:stars?|forks?|watchers?|open issues?|contributors?|downloads?|clones?|views?)",
+        re.IGNORECASE,
+    )
+
     def _numbers_ok(self, candidate: str, known_numbers: set[int]) -> bool:
-        cited = {int(n) for n in re.findall(r"\d+", candidate)}
+        cited = {int(n) for n in self._METRIC_CLAIM_PATTERN.findall(candidate)}
         return cited.issubset(known_numbers)
 
     def _known_numbers(self, ctx: ContentPipelineContext) -> set[int]:
