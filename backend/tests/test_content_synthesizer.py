@@ -53,3 +53,16 @@ def test_synthesizer_omits_candidate_on_call_failure():
 
     assert ctx.tasks[0].candidates == ["# New B"]
     assert any("candidate call failed" in e for e in ctx.errors)
+
+
+def test_synthesizer_gracefully_handles_unknown_kind():
+    task = ContentTask(kind="unknown_kind", target="x", structured=False, current=None, source_material={})
+    ctx = _ctx_with_task(task)
+    llm = MagicMock()
+    llm.available_provider_names.return_value = ["groq"]
+
+    ctx = ContentSynthesizer(llm_router=llm).run(ctx)  # must not raise
+
+    assert ctx.tasks[0].candidates == []
+    assert any("unknown task kind" in e for e in ctx.errors)
+    llm.chat_completion.assert_not_called()

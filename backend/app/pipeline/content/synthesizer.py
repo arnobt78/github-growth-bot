@@ -51,9 +51,15 @@ class ContentSynthesizer(Stage):
         return _KIND_PROMPTS[task.kind].format(**fields)
 
     def _generate_candidates(self, ctx: ContentPipelineContext, task: ContentTask) -> None:
+        try:
+            prompt = self._build_prompt(task)
+        except KeyError as exc:
+            ctx.errors.append(f"content_synthesizer: unknown task kind for {task.kind}/{task.target}: {exc}")
+            return
+
         messages = [
             {"role": "system", "content": "You follow the requested output format exactly, with no extra commentary."},
-            {"role": "user", "content": self._build_prompt(task)},
+            {"role": "user", "content": prompt},
         ]
         provider_names = self.llm_router.available_provider_names()
         skip_progression = [set(), set(provider_names[:1]), set(provider_names[:2])]
