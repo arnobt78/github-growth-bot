@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     token_encryption_key: str = ""
     internal_auth_secret: str = ""
 
+    # Phase 4E: Notifications & alerting
+    resend_api_key: str = ""
+    email_from: str = ""
+    frontend_base_url: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
