@@ -5,6 +5,7 @@ from app.events import broadcaster
 from app.github_client import GitHubClient
 from app.llm_router import LLMRouter
 from app.models import Repo, User
+from app.notifications import notify_needs_reauth, notify_pipeline_degraded
 from app.pipeline.analyzer import Analyzer
 from app.pipeline.assembler import Assembler
 from app.pipeline.extractor import Extractor
@@ -28,7 +29,7 @@ def build_stages(db: Session, gh_client: GitHubClient, llm_router: LLMRouter) ->
     ]
 
 
-def run_pipeline_for_all_repos(db: Session, user_id: int | None = None) -> None:
+def run_pipeline_for_all_repos(db: Session, user_id: int | None = None, notify: bool = False) -> None:
     settings = get_settings()
     llm_router = LLMRouter(settings=settings, db_session=db)
 
@@ -39,6 +40,7 @@ def run_pipeline_for_all_repos(db: Session, user_id: int | None = None) -> None:
 
     failed_auth_user_ids: set[int] = set()
     processed_user_ids: set[int] = set()
+    degraded: dict[int, list[str]] = {}
 
     for repo in repos:
         if repo.user_id in failed_auth_user_ids:
@@ -64,7 +66,20 @@ def run_pipeline_for_all_repos(db: Session, user_id: int | None = None) -> None:
             failed_auth_user_ids.add(repo.user_id)
             continue
 
+        if ctx.errors:
+            degraded.setdefault(repo.user_id, []).append(f"{repo.owner}/{repo.name}")
+
         processed_user_ids.add(repo.user_id)
 
     for uid in processed_user_ids:
         broadcaster.publish("run_completed", {}, user_id=uid)
+
+    if notify:
+        for uid, repo_names in degraded.items():
+            owner = db.get(User, uid)
+            if owner is not None:
+                notify_pipeline_degraded(owner, repo_names)
+        for uid in failed_auth_user_ids:
+            owner = db.get(User, uid)
+            if owner is not None:
+                notify_needs_reauth(db, owner)

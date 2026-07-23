@@ -163,3 +163,74 @@ def test_run_pipeline_survives_undecryptable_token_for_one_user(mock_build_stage
     published_user_ids = [call.kwargs.get("user_id") for call in mock_publish.call_args_list]
     assert user_b_id in published_user_ids
     assert user_a_id not in published_user_ids
+
+
+@patch("app.pipeline.jobs.notify_needs_reauth")
+@patch("app.pipeline.jobs.notify_pipeline_degraded")
+@patch("app.events.broadcaster.publish")
+@patch("app.pipeline.jobs.build_stages")
+def test_notify_false_by_default_sends_nothing(mock_build_stages, mock_publish, mock_notify_degraded, mock_notify_reauth):
+    user_id, _repo_id = _seed_user_with_repo("901")
+
+    mock_runner = MagicMock()
+    mock_runner.run_for_repo.side_effect = lambda repo: type(
+        "Ctx", (), {"errors": ["extractor: boom"]}
+    )()
+    with patch("app.pipeline.jobs.PipelineRunner", return_value=mock_runner):
+        from app.pipeline.jobs import run_pipeline_for_all_repos
+
+        db = SessionLocal()
+        run_pipeline_for_all_repos(db, user_id=user_id)  # notify defaults False
+        db.close()
+
+    mock_notify_degraded.assert_not_called()
+    mock_notify_reauth.assert_not_called()
+
+
+@patch("app.pipeline.jobs.notify_needs_reauth")
+@patch("app.pipeline.jobs.notify_pipeline_degraded")
+@patch("app.events.broadcaster.publish")
+@patch("app.pipeline.jobs.build_stages")
+def test_notify_true_sends_degraded_alert_with_repo_names(mock_build_stages, mock_publish, mock_notify_degraded, mock_notify_reauth):
+    user_id, repo_id = _seed_user_with_repo("902")
+
+    mock_runner = MagicMock()
+    mock_runner.run_for_repo.side_effect = lambda repo: type(
+        "Ctx", (), {"errors": ["extractor: boom"]}
+    )()
+    with patch("app.pipeline.jobs.PipelineRunner", return_value=mock_runner):
+        from app.pipeline.jobs import run_pipeline_for_all_repos
+
+        db = SessionLocal()
+        run_pipeline_for_all_repos(db, user_id=user_id, notify=True)
+        db.close()
+
+    mock_notify_degraded.assert_called_once()
+    call_user, call_repo_names = mock_notify_degraded.call_args[0]
+    assert call_user.id == user_id
+    assert call_repo_names == ["octocat/repo-902"]
+    mock_notify_reauth.assert_not_called()
+
+
+@patch("app.pipeline.jobs.notify_needs_reauth")
+@patch("app.pipeline.jobs.notify_pipeline_degraded")
+@patch("app.events.broadcaster.publish")
+@patch("app.pipeline.jobs.build_stages")
+def test_notify_true_sends_reauth_alert(mock_build_stages, mock_publish, mock_notify_degraded, mock_notify_reauth):
+    user_id, _repo_id = _seed_user_with_repo("903")
+
+    mock_runner = MagicMock()
+    mock_runner.run_for_repo.side_effect = lambda repo: type(
+        "Ctx", (), {"errors": ["extractor: needs_reauth: GitHub token rejected"]}
+    )()
+    with patch("app.pipeline.jobs.PipelineRunner", return_value=mock_runner):
+        from app.pipeline.jobs import run_pipeline_for_all_repos
+
+        db = SessionLocal()
+        run_pipeline_for_all_repos(db, user_id=user_id, notify=True)
+        db.close()
+
+    mock_notify_reauth.assert_called_once()
+    reauth_db_arg, reauth_user_arg = mock_notify_reauth.call_args[0]
+    assert reauth_user_arg.id == user_id
+    mock_notify_degraded.assert_not_called()
