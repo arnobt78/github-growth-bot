@@ -27,6 +27,15 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(255))
     avatar_url: Mapped[str] = mapped_column(String(500))
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Fallback alert-email recipient when `email` (derived from GitHub OAuth
+    # scope, not guaranteed present) is empty. Settings page lets the user
+    # set/clear this directly — see app/api/users.py's GET/PATCH /users/me.
+    notification_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Rate-limit guard for the needs_reauth alert email: null means "never
+    # sent (or eligible to send again)". needs_reauth persists until the user
+    # reconnects GitHub, so without this the daily scheduler would re-email
+    # the same unresolved condition every single day.
+    last_reauth_notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Fernet ciphertext of the user's GitHub OAuth access token. Never logged,
     # never returned by any API response — see app/token_crypto.py.
     access_token_encrypted: Mapped[str] = mapped_column(Text)
