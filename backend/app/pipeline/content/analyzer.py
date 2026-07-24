@@ -46,5 +46,17 @@ class ContentAnalyzer(Stage):
             source_material={"description": raw.get("description"), "readme": raw.get("readme") or "", "topics": topics},
         ))
 
+        latest_release = raw.get("latest_release")
+        if latest_release and latest_release.get("tag_name") != ctx.repo.last_release_tag:
+            body = (latest_release.get("body") or "").strip()
+            if body:
+                tasks.append(ContentTask(
+                    kind="release_notes",
+                    target=latest_release["tag_name"],
+                    structured=False,
+                    current=None,
+                    source_material={"tag": latest_release["tag_name"], "raw_notes": body, "repo_name": ctx.repo.name},
+                ))
+
         ctx.tasks = tasks
         return ctx

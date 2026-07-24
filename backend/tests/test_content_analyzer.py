@@ -40,3 +40,37 @@ def test_analyzer_builds_topic_task_when_under_tagged():
     topic_task = next(t for t in ctx.tasks if t.kind == "topic_suggestion")
     assert topic_task.current == ["cli"]
     assert topic_task.structured is True
+
+
+def test_analyzer_builds_release_notes_task_for_new_release():
+    ctx = _ctx(latest_release={"tag_name": "v1.2.0", "body": "- Added dark mode"})
+    ctx = ContentAnalyzer().run(ctx)
+
+    release_task = next(t for t in ctx.tasks if t.kind == "release_notes")
+    assert release_task.target == "v1.2.0"
+    assert release_task.current is None
+    assert release_task.structured is False
+    assert release_task.source_material == {"tag": "v1.2.0", "raw_notes": "- Added dark mode", "repo_name": "hello-world"}
+
+
+def test_analyzer_skips_release_notes_task_when_tag_already_drafted():
+    ctx = _ctx(latest_release={"tag_name": "v1.2.0", "body": "- Added dark mode"})
+    ctx.repo.last_release_tag = "v1.2.0"
+
+    ctx = ContentAnalyzer().run(ctx)
+
+    assert not any(t.kind == "release_notes" for t in ctx.tasks)
+
+
+def test_analyzer_skips_release_notes_task_when_body_is_empty():
+    ctx = _ctx(latest_release={"tag_name": "v1.2.0", "body": ""})
+    ctx = ContentAnalyzer().run(ctx)
+
+    assert not any(t.kind == "release_notes" for t in ctx.tasks)
+
+
+def test_analyzer_skips_release_notes_task_when_no_release_exists():
+    ctx = _ctx(latest_release=None)
+    ctx = ContentAnalyzer().run(ctx)
+
+    assert not any(t.kind == "release_notes" for t in ctx.tasks)
