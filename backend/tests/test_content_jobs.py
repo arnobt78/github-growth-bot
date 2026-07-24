@@ -10,6 +10,7 @@ def _fake_gh_client():
     gh.get_repo.return_value = {"topics": ["cli"], "description": "A tool", "stargazers_count": 10}
     gh.get_readme.return_value = "# Hello"
     gh.has_file.return_value = True  # no missing docs, keeps this test focused
+    gh.list_releases.return_value = []
     return gh
 
 
