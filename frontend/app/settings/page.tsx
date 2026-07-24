@@ -8,9 +8,14 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
   const queryClient = new QueryClient();
 
-  const [repos, providerStatus] = await Promise.all([api.listRepos(), api.providerStatus()]);
+  const [repos, providerStatus, me] = await Promise.all([
+    api.listRepos(),
+    api.providerStatus(),
+    api.getMe(),
+  ]);
   queryClient.setQueryData(queryKeys.repos.all, repos);
   queryClient.setQueryData(queryKeys.providers.status, providerStatus);
+  queryClient.setQueryData(queryKeys.users.me, me);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { AddRepoDialog } from "@/components/overview/add-repo-dialog";
+import { NotificationSettingsCard } from "@/components/settings/notification-settings-card";
 import { ProviderStatusTable } from "@/components/settings/provider-status-table";
 import { useDeleteRepo, useRepos } from "@/hooks/use-repos";
 
@@ -54,6 +55,8 @@ export function SettingsClient() {
       </div>
 
       <ProviderStatusTable />
+
+      <NotificationSettingsCard />
     </div>
   );
 }
