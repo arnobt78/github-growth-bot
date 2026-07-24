@@ -23,6 +23,11 @@ def mock_transport():
             return httpx.Response(200, json={})
         if request.url.path == "/search/repositories":
             return httpx.Response(200, json={"items": [{"full_name": "similar/repo", "stargazers_count": 100, "forks_count": 20, "topics": ["python"]}]})
+        if request.url.path == "/repos/octocat/hello-world/releases":
+            return httpx.Response(200, json=[
+                {"tag_name": "v1.2.0", "body": "- Added dark mode\n- Fixed crash on startup", "published_at": "2026-07-20T00:00:00Z"},
+                {"tag_name": "v1.1.0", "body": "- Initial release", "published_at": "2026-06-01T00:00:00Z"},
+            ])
         return httpx.Response(404)
 
     return httpx.MockTransport(handler)
@@ -93,3 +98,18 @@ def test_search_similar_repos_caches_across_instances():
     client_b.search_similar_repos(language="python", topic="cli", limit=5)
 
     assert call_count["n"] == 1
+
+
+def test_list_releases_returns_latest_first(gh_client):
+    releases = gh_client.list_releases("octocat", "hello-world", limit=1)
+    assert releases[0]["tag_name"] == "v1.2.0"
+
+
+def test_list_releases_returns_empty_list_for_repo_with_no_releases():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=[])
+
+    http = httpx.Client(base_url="https://api.github.com", transport=httpx.MockTransport(handler))
+    client = GitHubClient(token="fake-token", http_client=http)
+
+    assert client.list_releases("octocat", "empty-repo") == []

@@ -76,3 +76,6 @@ class GitHubClient:
         items = self._get("/search/repositories", params={"q": query, "sort": "stars", "per_page": limit}).json().get("items", [])
         GitHubClient._benchmark_cache[cache_key] = (time.time(), items)
         return items
+
+    def list_releases(self, owner: str, name: str, limit: int = 2) -> list[dict]:
+        return self._get(f"/repos/{owner}/{name}/releases", params={"per_page": limit}).json()
