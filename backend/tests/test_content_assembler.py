@@ -55,3 +55,36 @@ def test_assembler_skips_invalid_tasks(seed_user):
 
     assert db.query(Draft).filter_by(repo_id=repo.id).count() == 0
     db.close()
+
+
+def test_assembler_writes_release_notes_draft_and_advances_last_release_tag(seed_user):
+    db, repo = _db_and_repo(seed_user)
+    ctx = ContentPipelineContext(repo=repo)
+    ctx.tasks = [
+        ContentTask(kind="release_notes", target="v1.2.0", structured=False, current=None, winner="## Features\n- Dark mode", winner_reason="clear and accurate", valid=True),
+    ]
+
+    ctx = ContentAssembler(db_session=db).run(ctx)
+
+    draft = db.query(Draft).filter_by(repo_id=repo.id, kind="release_notes").one()
+    assert draft.target == "v1.2.0"
+    assert draft.content == {"suggested": "## Features\n- Dark mode", "reason": "clear and accurate"}
+
+    db.refresh(repo)
+    assert repo.last_release_tag == "v1.2.0"
+    db.close()
+
+
+def test_assembler_does_not_advance_last_release_tag_for_invalid_task(seed_user):
+    db, repo = _db_and_repo(seed_user)
+    ctx = ContentPipelineContext(repo=repo)
+    ctx.tasks = [
+        ContentTask(kind="release_notes", target="v1.2.0", structured=False, current=None, winner=None, winner_reason=None, valid=False),
+    ]
+
+    ctx = ContentAssembler(db_session=db).run(ctx)
+
+    assert db.query(Draft).filter_by(repo_id=repo.id, kind="release_notes").count() == 0
+    db.refresh(repo)
+    assert repo.last_release_tag is None
+    db.close()

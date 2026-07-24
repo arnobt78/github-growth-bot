@@ -23,6 +23,8 @@ class ContentAssembler(Stage):
                 content=self._content_for(task),
                 status="pending",
             ))
+            if task.kind == "release_notes":
+                ctx.repo.last_release_tag = task.target
         self.db.commit()
         return ctx
 
@@ -34,6 +36,6 @@ class ContentAssembler(Stage):
                 "keywords": task.winner["keywords"],
                 "reason": task.winner_reason,
             }
-        if task.kind == "missing_doc_suggestion":
+        if task.kind in ("missing_doc_suggestion", "release_notes"):
             return {"suggested": task.winner, "reason": task.winner_reason}
         return {"current": task.current, "suggested": task.winner, "reason": task.winner_reason}
