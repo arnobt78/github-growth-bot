@@ -66,3 +66,23 @@ def test_synthesizer_gracefully_handles_unknown_kind():
     assert ctx.tasks[0].candidates == []
     assert any("unknown task kind" in e for e in ctx.errors)
     llm.chat_completion.assert_not_called()
+
+
+def test_synthesizer_builds_release_notes_prompt():
+    task = ContentTask(
+        kind="release_notes",
+        target="v1.2.0",
+        structured=False,
+        current=None,
+        source_material={"tag": "v1.2.0", "raw_notes": "- Added dark mode", "repo_name": "hello-world"},
+    )
+    ctx = _ctx_with_task(task)
+    llm = _fake_llm(["## Features\n- Dark mode"])
+
+    ctx = ContentSynthesizer(llm_router=llm).run(ctx)
+
+    assert ctx.tasks[0].candidates == ["## Features\n- Dark mode"]
+    sent_prompt = llm.chat_completion.call_args_list[0].args[0][1]["content"]
+    assert "hello-world" in sent_prompt
+    assert "v1.2.0" in sent_prompt
+    assert "- Added dark mode" in sent_prompt

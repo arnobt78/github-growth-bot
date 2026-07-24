@@ -27,6 +27,14 @@ _KIND_PROMPTS = {
         'keywords. Respond with strict JSON only: {{"description": "...", "keywords": ["...", "..."]}}.\n\n'
         "Current description: {description}\nTopics: {topics}\nREADME:\n{readme}"
     ),
+    "release_notes": (
+        "Rewrite the following raw release notes for {repo_name} (tag {tag}) as clear, "
+        "user-facing release notes in markdown. Group changes under headings like "
+        "'Features', 'Fixes', 'Other' only where the raw notes actually support that "
+        "grouping — do not invent categories or claims not present in the raw notes below. "
+        "Respond with the release notes text only, no commentary.\n\n"
+        "Raw notes:\n{raw_notes}"
+    ),
 }
 
 
@@ -47,6 +55,9 @@ class ContentSynthesizer(Stage):
             "topics": task.source_material.get("topics") or [],
             "description": task.source_material.get("description") or "",
             "filename": task.source_material.get("filename", ""),
+            "repo_name": task.source_material.get("repo_name", ""),
+            "tag": task.source_material.get("tag", ""),
+            "raw_notes": task.source_material.get("raw_notes", ""),
         }
         return _KIND_PROMPTS[task.kind].format(**fields)
 
