@@ -98,4 +98,18 @@ Append-only. `GATE-XXXX` with Gate type, Cycle, Scope, Decision (Approved/Condit
 - **Evidence Reference:** commit range `2394510..bf89320` (9 commits, Phase 4E plan through Task 8); pushed to `https://github.com/arnobt78/github-growth-bot` at `main`
 - **Closes:** Phase 4E Stage 5 acceptance (no `CHECKPOINTS.md` interrupt was opened for this sub-scope — same as every prior Phase 4 sub-project, approval requested directly via Evidence Summary rather than a durable interrupt)
 
-Next entry will be `GATE-0007`.
+## GATE-0007
+
+- **Gate type:** Gate 2 (Acceptance)
+- **Cycle:** C1
+- **Scope:** Phase 4C release notes generation (REQ-0023) — 8-task subagent-driven build (`docs/superpowers/plans/2026-07-24-phase4c-release-notes.md`), 0 fix rounds on the plan's own tasks, 1 out-of-scope regression independently found and fixed (Task 6's implementer flagged an unstubbed `list_releases` mock in a Phase 4E test file that corrupted a Draft commit), final whole-branch review (opus) ready to merge with 0 Critical/Important and 1 cosmetic Minor item.
+- **Decision:** Approved
+- **Conditions:** None. (`alembic upgrade head` against real Postgres remains the Product Owner's own follow-up step. Cross-posting and 4G's demo-asset regen remain explicitly deferred, out of this sub-project's scope, pending external platform app registrations. Deployment itself remains separately gated per POL-0006.)
+- **Approver:** Arnob Mahmud
+- **Role/Authority:** Project Owner / Sole Stakeholder (per config.json authority_matrix)
+- **Timestamp:** 2026-07-24
+- **Signature Method:** Standing explicit instruction in chat ("commite in github if all okay as flawless after code review") given at the start of this multi-phase build session, applied here after a clean final whole-branch review — non-regulated context, name + timestamp is the required minimum per `agile-v-compliance`'s signature table
+- **Evidence Reference:** commit range `dc4d83f..918844d` (9 commits, Phase 4C plan through Task 8); pushed to `https://github.com/arnobt78/github-growth-bot` at `main`
+- **Closes:** Phase 4C Stage 5 acceptance (no `CHECKPOINTS.md` interrupt was opened for this sub-scope — same as every prior Phase 4 sub-project, approval requested directly via Evidence Summary rather than a durable interrupt)
+
+Next entry will be `GATE-0008`.
