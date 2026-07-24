@@ -19,6 +19,7 @@ class ContentExtractor(Stage):
         repo_data = self.gh_client.get_repo(owner, name)
 
         missing_docs = [f for f in STANDARD_DOC_FILES if not self.gh_client.has_file(owner, name, f)]
+        releases = self.gh_client.list_releases(owner, name, limit=1)
 
         ctx.raw = {
             "repo": repo_data,
@@ -27,5 +28,6 @@ class ContentExtractor(Stage):
             "description": repo_data.get("description"),
             "stars": repo_data.get("stargazers_count", 0),
             "missing_docs": missing_docs,
+            "latest_release": releases[0] if releases else None,
         }
         return ctx

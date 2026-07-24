@@ -15,6 +15,7 @@ def _fake_gh_client(missing: set[str] | None = None):
     }
     gh.get_readme.return_value = "# Hello"
     gh.has_file.side_effect = lambda owner, name, path: path not in missing
+    gh.list_releases.return_value = [{"tag_name": "v1.2.0", "body": "- Added dark mode", "published_at": "2026-07-20T00:00:00Z"}]
     return gh
 
 
@@ -40,3 +41,25 @@ def test_extractor_detects_missing_standard_docs():
     ctx = ContentExtractor(gh_client=gh).run(ctx)
 
     assert set(ctx.raw["missing_docs"]) == {"SECURITY.md", "CODE_OF_CONDUCT.md"}
+
+
+def test_extractor_populates_latest_release():
+    repo = Repo(owner="octocat", name="hello-world")
+    ctx = ContentPipelineContext(repo=repo)
+    gh = _fake_gh_client()
+
+    ctx = ContentExtractor(gh_client=gh).run(ctx)
+
+    assert ctx.raw["latest_release"]["tag_name"] == "v1.2.0"
+    gh.list_releases.assert_called_once_with("octocat", "hello-world", limit=1)
+
+
+def test_extractor_latest_release_is_none_when_no_releases_exist():
+    repo = Repo(owner="octocat", name="hello-world")
+    ctx = ContentPipelineContext(repo=repo)
+    gh = _fake_gh_client()
+    gh.list_releases.return_value = []
+
+    ctx = ContentExtractor(gh_client=gh).run(ctx)
+
+    assert ctx.raw["latest_release"] is None
