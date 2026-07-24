@@ -26,8 +26,11 @@ export interface SeoSuggestionContent {
   reason: string | null;
 }
 
+export type ReleaseNotesContent = MissingDocSuggestionContent;
+
 export type DraftKind =
   | "readme_suggestion"
   | "missing_doc_suggestion"
   | "topic_suggestion"
-  | "seo_suggestion";
+  | "seo_suggestion"
+  | "release_notes";

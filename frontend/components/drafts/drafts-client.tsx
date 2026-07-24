@@ -21,6 +21,7 @@ const DRAFT_KIND_LABELS: Record<string, string> = {
   missing_doc_suggestion: "Missing doc",
   topic_suggestion: "Topic suggestion",
   seo_suggestion: "SEO suggestion",
+  release_notes: "Release notes",
 } satisfies Record<DraftKind, string>;
 
 export function DraftsClient() {
@@ -67,6 +68,7 @@ export function DraftsClient() {
                     {draft.repo_id !== null ? repoNameById.get(draft.repo_id) ?? `repo #${draft.repo_id}` : "Account-level"}
                     {" · "}
                     {DRAFT_KIND_LABELS[draft.kind] ?? draft.kind}
+                    {draft.kind === "release_notes" && ` (${draft.target})`}
                   </p>
                   <div className="mt-1">
                     <DraftContent kind={draft.kind} content={draft.content} />
