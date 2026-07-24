@@ -36,6 +36,12 @@ describe("DraftContent", () => {
     expect(screen.getByText("standard template")).toBeInTheDocument();
   });
 
+  it("renders suggested text and reason for release_notes", () => {
+    render(<DraftContent kind="release_notes" content={{ suggested: "## Features\n- Dark mode", reason: "based on the raw release body" }} />);
+    expect(screen.getByText(/Dark mode/)).toBeInTheDocument();
+    expect(screen.getByText("based on the raw release body")).toBeInTheDocument();
+  });
+
   it("omits the reason line when reason is null", () => {
     render(<DraftContent kind="missing_doc_suggestion" content={{ suggested: "# Security Policy", reason: null }} />);
     expect(screen.getByText("# Security Policy")).toBeInTheDocument();

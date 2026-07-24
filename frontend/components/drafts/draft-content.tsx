@@ -58,6 +58,15 @@ export function DraftContent({ kind, content }: { kind: DraftKind | string; cont
     );
   }
 
+  if (kind === "release_notes" && isMissingDocSuggestion(content)) {
+    return (
+      <div>
+        <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-xs">{content.suggested}</pre>
+        <Reason reason={content.reason} />
+      </div>
+    );
+  }
+
   if (kind === "topic_suggestion" && isTopicSuggestion(content)) {
     return (
       <div>
