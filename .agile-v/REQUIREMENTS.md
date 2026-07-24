@@ -105,9 +105,20 @@ Source of truth: `docs/superpowers/specs/2026-07-23-phase4b-content-generation-p
 
 ---
 
+## Phase 4E: Notifications & Alerting Requirements (C1, Phase 4E — Implemented)
+
+Source of truth: `docs/superpowers/specs/2026-07-23-phase4e-notifications-alerting-design.md`. Third built sub-project of the Phase 4 roadmap (after 4A, 4B); chosen next per `PROJECT_PLAN.md`'s own recommended-build-order table and lowest external-setup friction.
+
+**REQ-0022 — Resend-backed email alerts + notification-email fallback.** New `EmailClient` (`backend/app/email_client.py`), a thin `httpx.Client` wrapper around Resend's REST API mirroring `GitHubClient`'s shape — `send()` never raises, degrading to "no email sent" on any Resend outage rather than crashing a scheduled job. New `app/notifications.py` with three sender functions (`notify_pipeline_degraded`, `notify_needs_reauth`, `notify_drafts_ready`), recipient resolved as `user.notification_email or user.email`, silent no-op when neither exists. Two new nullable `User` columns: `notification_email` (Settings-page fallback) and `last_reauth_notified_at` (24h rate-limit guard on the reauth email — verified correct under both SQLite's naive-datetime test behavior and real Postgres's tz-aware columns). Both `run_pipeline_for_all_repos` and `run_content_pipeline_for_all_repos` gained a `notify: bool = False` parameter; only the two APScheduler wrappers in `app/main.py` pass `notify=True` — the manual `POST /runs`/`POST /runs/content` routes are untouched and never email. New `GET`/`PATCH /users/me` (first `require_user`-scoped endpoints on `app/api/users.py`) backs a new "Notifications" card on the Settings page, wired into the existing SSE/TanStack Query pattern via a new `user_updated` event (`setQueryData` same-tab, `invalidateQueries` cross-tab).
+**Status:** verified [C1]. Primary artifacts: `backend/app/email_client.py`, `backend/app/notifications.py`, `backend/app/models.py::User.{notification_email,last_reauth_notified_at}`, `backend/alembic/versions/9cb171d67eae_add_notification_fields_to_users.py`, `backend/app/pipeline/jobs.py`/`content_jobs.py` (`notify` param), `backend/app/main.py` (scheduler wrappers), `backend/app/api/users.py` (`GET`/`PATCH /users/me`), `backend/app/config.py`/`.env.example` (`RESEND_API_KEY`/`EMAIL_FROM`/`FRONTEND_BASE_URL`), `frontend/hooks/use-me.ts`, `frontend/app/api/users/me/route.ts`, `frontend/components/settings/notification-settings-card.tsx`, `frontend/hooks/use-live-events.ts` (`user_updated` mapping). Built via an 8-task subagent-driven plan (`docs/superpowers/plans/2026-07-23-phase4e-notifications-alerting.md`). Task 3's implementer found and fixed a real SQLite-vs-Postgres naive/aware-datetime bug in the 24h cooldown comparison (independently re-verified correct for both environments). Task 4 required one fix round for a real cross-repo double-notification gap (a multi-repo user hitting both a degraded run and needs_reauth in the same batch would have received two separate alert emails); fixed by suppressing the degraded email for any user also in that run's reauth set. Final whole-branch review (opus): 0 Critical, 0 Important, 2 cosmetic Minor (per-email `httpx.Client` not explicitly closed — matches existing `GitHubClient` convention; Settings input doesn't resync on a cross-tab SSE refetch — spec-prescribed, not a defect) — ready to merge as-is. Backend 139/139 tests, `pip-audit` clean. Frontend `tsc`/`eslint`/`vitest`(20/20)/`next build` all clean.
+
+**Remaining:** the Product Owner already supplied a real, verified Resend API key and `EMAIL_FROM` (in gitignored `backend/.env`); `alembic upgrade head` against the real local/prod Postgres and a live end-to-end email-delivery check are deliberately left for the Product Owner, same pattern as every prior migration/OAuth-gated verification step.
+
+---
+
 ## Deferred to Later Cycles (explicitly out of C1 scope)
 
-Per the approved design spec, the remaining feature groups from the user's original request are deferred and will be opened as new cycles (C2+) with their own REQ sets when picked up: issue/discussion auto-response (4F); release-notes automation + demo GIF/video generation (4C/4G); community & trend discovery (4D — similar-repo contribution opportunities, forum recommendations); notifications & alerting (4E).
+Per the approved design spec, the remaining feature groups from the user's original request are deferred and will be opened as new cycles (C2+) with their own REQ sets when picked up: issue/discussion auto-response (4F); release-notes automation + demo GIF/video generation (4C/4G); community & trend discovery (4D — similar-repo contribution opportunities, forum recommendations).
 
 ## Traceability Index
 
@@ -135,5 +146,6 @@ Per the approved design spec, the remaining feature groups from the user's origi
 | REQ-0019 | Multi-tenant | verified [C1] | backend/app/rate_limit.py, backend/app/api/{repos,runs}.py |
 | REQ-0020 | Phase 4A | verified [C1] | backend/app/models.py::Draft, backend/app/api/drafts.py, frontend/hooks/use-drafts.ts, frontend/components/drafts/* |
 | REQ-0021 | Phase 4B | verified [C1] | backend/app/pipeline/content/*.py, backend/app/pipeline/content_jobs.py, backend/app/llm_router.py, frontend/types/drafts.ts, frontend/components/drafts/draft-content.tsx |
+| REQ-0022 | Phase 4E | verified [C1] | backend/app/email_client.py, backend/app/notifications.py, backend/app/api/users.py, frontend/hooks/use-me.ts, frontend/components/settings/notification-settings-card.tsx |
 
 **Frontend sub-scope Gate 2:** Approved (`GATE-0002`, 2026-07-21) — REQ-0010–REQ-0013 verified; REQ-0014's guardrail *code* is verified but actual Vercel deployment remains a separate, still-open action gated by POL-0006.

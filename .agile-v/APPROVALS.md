@@ -84,4 +84,18 @@ Append-only. `GATE-XXXX` with Gate type, Cycle, Scope, Decision (Approved/Condit
 - **Evidence Reference:** commit `451eb10` (post-audit fix, HEAD of accepted work); pushed to `https://github.com/arnobt78/github-growth-bot` at `main`
 - **Closes:** Phase 4B Stage 5 acceptance (no `CHECKPOINTS.md` interrupt was opened for this sub-scope — same as multi-tenant SaaS and Phase 4A, approval requested directly via Evidence Summary rather than a durable interrupt)
 
-Next entry will be `GATE-0006`.
+## GATE-0006
+
+- **Gate type:** Gate 2 (Acceptance)
+- **Cycle:** C1
+- **Scope:** Phase 4E notifications & alerting (REQ-0022) — 8-task subagent-driven build (`docs/superpowers/plans/2026-07-23-phase4e-notifications-alerting.md`), 1 task-scoped fix round (Task 4's cross-repo double-notification gap), final whole-branch review (opus) ready to merge with 0 Critical/Important and 2 cosmetic Minor items.
+- **Decision:** Approved
+- **Conditions:** None. (`alembic upgrade head` against real Postgres and a live end-to-end email-delivery check remain the Product Owner's own follow-up steps, same pattern as every prior migration/OAuth-gated verification. Deployment itself remains separately gated per POL-0006.)
+- **Approver:** Arnob Mahmud
+- **Role/Authority:** Project Owner / Sole Stakeholder (per config.json authority_matrix)
+- **Timestamp:** 2026-07-24
+- **Signature Method:** Standing explicit instruction in chat ("commite in github if all okay as flawless after code review") given at the start of this multi-phase build session, applied here after a clean final whole-branch review — non-regulated context, name + timestamp is the required minimum per `agile-v-compliance`'s signature table
+- **Evidence Reference:** commit range `2394510..bf89320` (9 commits, Phase 4E plan through Task 8); pushed to `https://github.com/arnobt78/github-growth-bot` at `main`
+- **Closes:** Phase 4E Stage 5 acceptance (no `CHECKPOINTS.md` interrupt was opened for this sub-scope — same as every prior Phase 4 sub-project, approval requested directly via Evidence Summary rather than a durable interrupt)
+
+Next entry will be `GATE-0007`.
