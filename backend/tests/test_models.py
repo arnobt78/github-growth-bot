@@ -66,3 +66,31 @@ def test_user_notification_fields_default_none_and_are_settable():
     assert user.notification_email == "fallback@example.com"
     assert user.last_reauth_notified_at is not None
     db.close()
+
+
+def test_repo_last_release_tag_defaults_none_and_is_settable():
+    db = SessionLocal()
+    user = User(
+        github_id="777",
+        username="release-tester",
+        avatar_url="https://avatars.githubusercontent.com/u/777",
+        email=None,
+        access_token_encrypted="ciphertext-placeholder",
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    repo = Repo(owner="octocat", name="hello-world", user_id=user.id)
+    db.add(repo)
+    db.commit()
+    db.refresh(repo)
+
+    assert repo.last_release_tag is None
+
+    repo.last_release_tag = "v1.2.0"
+    db.commit()
+    db.refresh(repo)
+
+    assert repo.last_release_tag == "v1.2.0"
+    db.close()

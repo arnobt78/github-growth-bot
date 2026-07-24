@@ -52,6 +52,13 @@ class Repo(Base):
     owner: Mapped[str] = mapped_column(String(255))
     name: Mapped[str] = mapped_column(String(255))
     tracked_since: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    # Last release tag_name we've already generated (or attempted to generate)
+    # release notes for. Null means "never checked" — the repo's current
+    # latest release, even if it predates tracking, still gets a Draft the
+    # first time the content pipeline runs for it. Only advances when a Draft
+    # was actually written (see ContentAssembler) — a transient LLM outage
+    # must not permanently skip a release.
+    last_release_tag: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
 
 class Snapshot(Base):
